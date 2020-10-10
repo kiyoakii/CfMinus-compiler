@@ -1,0 +1,14 @@
+struct Complex
+{
+  float real, image;
+}
+
+int main()
+{
+  struct Complex x;
+  float a[10] = 1.5;
+  int i = 100;
+  x.image = ~i;
+
+  if (a[1][2] == 0) i =1 else i =0;
+}
