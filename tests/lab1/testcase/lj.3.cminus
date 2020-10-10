@@ -1,0 +1,12 @@
+void*[] main()
+{
+    int i = 0123;
+    for (i = 1; i < 10; i++) {
+        i += 1;
+    }
+    /* /** test duplicate /*
+    Lorem ipsum...int
+    Lorem ipsum ....# float
+    13.3    dafd****/
+
+}

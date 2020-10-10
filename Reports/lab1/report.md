@@ -85,9 +85,74 @@ int  {pos_start = pos_end; pos_end += yyleng; return INT; }
 需要注意的是，上述 4 句的顺序是很关键的，因为要保证在注释中不会出现 */ 这个字符串，同时正确对 pos_end 和 lines 等变量计数。
 
 ## 实验结果验证
+
+下面给出自定义的样例，均已通过测试。
+
 ### 样例一
 
+```c
+void*[] main()
+{
+    int i = 0123;
+    for (i = 1; i < 10; i++) {
+        i += 1;
+    }
+    /* /** test duplicate /*
+    Lorem ipsum...int
+    Lorem ipsum ....# float
+    13.3    dafd****/
 
+}
+```
+
+### 样例二
+
+```c
+/*/*/
+int num[1151];
+void bubbleSort(int *a, int n) /* bubbleSort */ {  bool flag = true;
+  while (flag) {
+    flag = false;
+    for (int i = 1; i < n; ++i) {
+      if (a[i] > a[i + 1]) {
+        flag = true;
+        int t = a[i];
+        a[i] = a[i + 1];
+        a[i + 1] = t;
+      }
+    }
+  }
+}
+int main(){
+    num[1]=3;
+    num[2]=2;
+    num[3]=1;
+    bubbleSort(num,3);
+    return 0;
+}
+```
+
+### 样例三
+
+```c
+int happy[1151];
+int fun(int n){
+    if (n <= 1)return n;
+    else
+    return fun(n-1) +    fun(n-2);
+}
+ 
+
+int main()
+{
+    int n = 1000;
+    int i;
+    for (i = 0; i < n+1; i++)         /* Outp
+    ut all happy numbers. */{
+    happy[i]=fun(i);
+    }
+    return 0;}
+```
 
 ## 实验反馈
 
