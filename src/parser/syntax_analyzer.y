@@ -295,7 +295,7 @@ void yyerror(const char *s)
 {
     // TO STUDENTS: This is just an example.
     // You can customize it as you like.
-    fprintf(stderr, "error at line %d column %d: %s\n", lines, pos_start, s);
+    exit(0);
 }
 
 /// Parse input from file `input_path`, and prints the parsing results
