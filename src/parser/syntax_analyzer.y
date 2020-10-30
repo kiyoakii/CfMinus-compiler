@@ -58,23 +58,23 @@ var-declaration
     $$ = node("var-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$; 
 };
 
-type-specifier  
+type-specifier
 : INT {
     $$ = node("type-specifier", 1, $1); gt->root = $$;
 }
-| FLOAT{
+| FLOAT {
     $$ = node("type-specifier", 1, $1); gt->root = $$;
 }
-| VOID{
+| VOID {
     $$ = node("type-specifier", 1, $1); gt->root = $$;
 };
 
-fun-declaration 
+fun-declaration
 : type-specifier IDENTIFIER LPARENTHESE params RPARENTHESE compound-stmt {
     $$ = node("fun-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$;
 };
 
-params  
+params
 : param-list{
     $$ = node("params", 1, $1); gt->root = $$;
 }
@@ -82,7 +82,7 @@ params
     $$ = node("params", 1, $1); gt->root = $$;
 };
 
-param-list  
+param-list
 : param-list COMMA param {
     $$ = node("param-list", 3, $1, $2, $3); gt->root = $$;
 }
@@ -90,7 +90,7 @@ param-list
     $$ = node("param-list", 1, $1); gt->root = $$;
 };
 
-param   
+param
 : type-specifier IDENTIFIER {
     $$ = node("param", 2, $1, $2); gt->root = $$;
 }
@@ -98,12 +98,12 @@ param
     $$ = node("param", 3, $1, $2, $3); gt->root = $$;
 };
 
-compound-stmt 
+compound-stmt
 : LBRACE local-declarations statement-list RBRACE {
     $$ = node("compound-stmt", 4, $1, $2, $3, $4); gt->root = $$;
 };
 
-local-declarations  
+local-declarations
 : local-declarations var-declaration {
     $$ = node("local-declarations", 2, $1, $2); gt->root = $$;
 }
@@ -111,7 +111,7 @@ local-declarations
     $$ = node("local-declarations", 0); gt->root = $$;
 };
 
-statement-list  
+statement-list
 : statement-list statement {
     $$ = node("statement-list", 2, $1, $2); gt->root = $$;
 }
@@ -119,7 +119,7 @@ statement-list
     $$ = node("statement-list", 0); gt->root = $$;
 };
 
-statement   
+statement
 : expression-stmt {
     $$ = node("statement", 1, $1); gt->root = $$;
 }
@@ -136,7 +136,7 @@ statement
     $$ = node("statement", 1, $1); gt->root = $$;
 };
 
-expression-stmt 
+expression-stmt
 : expression SEMICOLON {
     $$ = node("expression-stmt", 2, $1, $2); gt->root = $$;
 }
@@ -144,7 +144,7 @@ expression-stmt
     $$ = node("expression-stmt", 1, $1); gt->root = $$;
 };
 
-selection-stmt 
+selection-stmt
 : IF LPARENTHESE expression RPARENTHESE statement {
     $$ = node("selection-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
 }
@@ -152,12 +152,12 @@ selection-stmt
     $$ = node("selection-stmt", 7, $1, $2, $3, $4, $5, $6, $7); gt->root = $$;
 };
 
-iteration-stmt 
+iteration-stmt
 : WHILE LPARENTHESE expression RPARENTHESE statement {
     $$ = node("iteration-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
 };
 
-return-stmt 
+return-stmt
 : RETURN SEMICOLON {
     $$ = node("return-stmt", 2, $1, $2); gt->root = $$;
 }
@@ -165,7 +165,7 @@ return-stmt
     $$ = node("return-stmt", 3, $1, $2, $3); gt->root = $$;
 };
 
-expression 
+expression
 : var ASSIN expression {
     $$ = node("expression",3, $1, $2, $3); gt->root = $$;
 }
@@ -173,7 +173,7 @@ expression
     $$ = node("expression",1, $1); gt->root = $$;
 };
 
-var 
+var
 : IDENTIFIER {
     $$ = node("var",1, $1); gt->root = $$;
 }
@@ -189,7 +189,7 @@ simple-expression
     $$ = node("simple-expression",1, $1); gt->root = $$;
 };
 
-relop 
+relop
 : LT {
     $$ = node("relop",1, $1); gt->root = $$;
 }
@@ -209,7 +209,7 @@ relop
     $$ = node("relop",1, $1); gt->root = $$;
 };
 
-additive-expression 
+additive-expression
 : additive-expression addop term {
     $$ = node("additive-expression",3, $1, $2, $3); gt->root = $$;
 }
@@ -217,7 +217,7 @@ additive-expression
     $$ = node("additive-expression",1, $1); gt->root = $$;
 };
 
-addop 
+addop
 : ADD {
     $$ = node("addop",1, $1); gt->root = $$;
 }
@@ -225,7 +225,7 @@ addop
     $$ = node("addop",1, $1); gt->root = $$;
 };
 
-term 
+term
 : term mulop factor {
     $$ = node("term",3, $1, $2, $3); gt->root = $$;
 }
@@ -233,14 +233,14 @@ term
     $$ = node("term",1, $1); gt->root = $$;
 };
 
-mulop 
+mulop
 : MUL {
     $$ = node("mulop",1, $1); gt->root = $$;
 }| DIV {
     $$ = node("mulop",1, $1); gt->root = $$;
 };
 
-factor 
+factor
 : LPARENTHESE expression RPARENTHESE  {
     $$ = node("factor",3, $1, $2, $3); gt->root = $$;
 }
@@ -257,22 +257,22 @@ factor
     $$ = node("factor",1, $1); gt->root = $$;
 }
 
-integer 
+integer
 : INTEGER {
     $$ = node("integer",1, $1); gt->root = $$;
 };
 
-float 
+float
 : FLOATPOINT {
     $$ = node("float",1, $1); gt->root = $$;
 };
 
-call 
+call
 : IDENTIFIER LPARENTHESE args RPARENTHESE {
     $$ = node("call",4, $1, $2, $3, $4); gt->root = $$;
 };
 
-args 
+args
 : arg-list {
     $$ = node("args",1, $1); gt->root = $$;
 }
@@ -280,7 +280,7 @@ args
     $$ = node("args", 0); gt->root = $$;
 };
 
-arg-list 
+arg-list
 : arg-list COMMA expression {
     $$ = node("arg-list",3, $1, $2, $3); gt->root = $$;
 }
