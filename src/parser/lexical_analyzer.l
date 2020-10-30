@@ -61,7 +61,7 @@ float   {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return F
 <comment>"*/"   {BEGIN(INITIAL);    pos_end += 2;   }
 <comment>.      {++pos_end;}
 
-{ws}        {pos_start = pos_end;  pos_end += yyleng;   return BLANK;       }
+{ws}        {pos_start = pos_end;  pos_end += yyleng; }
 {integer}   {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return INTEGER;     }
 {float}     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return FLOATPOINT;  }
 {id}        {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return IDENTIFIER;  }
