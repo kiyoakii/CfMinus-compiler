@@ -8,6 +8,7 @@
 
 // external functions from lex
 extern int yylex();
+extern FILE* yyin;
 
 // external variables from lexical_analyzer module
 extern int lines;
