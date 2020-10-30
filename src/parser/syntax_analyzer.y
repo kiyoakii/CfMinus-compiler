@@ -29,27 +29,27 @@ syntax_tree_node *node(const char *node_name, int children_num, ...);
     syntax_tree_node* node;
 }
 
-%type <node> program id type-specifier relop addop mulop declaration-list declaration var-declaration fun-declaration local-declarations compound-stmt statement-list statement expression-stmt iteration-stmt selection-stmt return-stmt expression var additive-expression term factor integer float call params param-list param args arg-list
+%type <node> program type-specifier relop addop mulop simple-expression declaration-list declaration var-declaration fun-declaration local-declarations compound-stmt statement-list statement expression-stmt iteration-stmt selection-stmt return-stmt expression var additive-expression term factor integer float call params param-list param args arg-list
 %token <node> ADD SUB MUL DIV LT LTE GT GTE EQ NEQ ASSIN SEMICOLON LBRACKET RBRACKET COMMA LPARENTHESE RPARENTHESE LBRACE RBRACE IDENTIFIER INTEGER FLOAT ARRAY LETTER ERROR INT VOID IF ELSE WHILE RETURN FLOATPOINT BLANK
 
 %start program
 
 %%
 
-program 
+program
 : declaration-list { 
     $$ = node("program", 1, $1); gt->root = $$; 
 };
 
-declaration-list    
+declaration-list
 : declaration-list declaration { $$ = node("declaration-list", 2, $1, $2); gt->root = $$; }
 | declaration { $$ = node("declaration-list", 1, $1); gt->root = $$; };
 
-declaration 
+declaration
 : var-declaration { $$ = node("declaration", 1, $1); gt->root = $$; }
 | fun-declaration { $$ = node("declaration", 1, $1); gt->root = $$; };
 
-var-declaration 
+var-declaration
 : type-specifier IDENTIFIER SEMICOLON { 
     $$ = node("var-declaration", 3, $1, $2, $3); gt->root = $$; 
 }
