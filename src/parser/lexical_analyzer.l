@@ -26,35 +26,35 @@ float   {digit}+\.|{digit}*\.{digit}+
 
 %%
 
-else    {pos_start = pos_end;  pos_end += yyleng;   return ELSE;    }
-if      {pos_start = pos_end;  pos_end += yyleng;   return IF;      }
-int     {pos_start = pos_end;  pos_end += yyleng;   return INT;     }
-return  {pos_start = pos_end;  pos_end += yyleng;   return RETURN;  }
-void    {pos_start = pos_end;  pos_end += yyleng;   return VOID;    }
-while   {pos_start = pos_end;  pos_end += yyleng;   return WHILE;   }
-float   {pos_start = pos_end;  pos_end += yyleng;   return FLOAT;   }
+else    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return ELSE;    }
+if      {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return IF;      }
+int     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return INT;     }
+return  {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return RETURN;  }
+void    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return VOID;    }
+while   {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return WHILE;   }
+float   {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return FLOAT;   }
 
-"+"     {pos_start = pos_end;  pos_end += yyleng;   return ADD; }
-"-"     {pos_start = pos_end;  pos_end += yyleng;   return SUB; }
-"*"     {pos_start = pos_end;  pos_end += yyleng;   return MUL; }
-"/"     {pos_start = pos_end;  pos_end += yyleng;   return DIV; }
-"<"     {pos_start = pos_end;  pos_end += yyleng;   return LT;  }
-"<="    {pos_start = pos_end;  pos_end += yyleng;   return LTE; }
-">"     {pos_start = pos_end;  pos_end += yyleng;   return GT;  }
-">="    {pos_start = pos_end;  pos_end += yyleng;   return GTE; }
-"=="    {pos_start = pos_end;  pos_end += yyleng;   return EQ;  }
-"!="    {pos_start = pos_end;  pos_end += yyleng;   return NEQ; }
-"="     {pos_start = pos_end;  pos_end += yyleng;   return ASSIN;}
+"+"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return ADD; }
+"-"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return SUB; }
+"*"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return MUL; }
+"/"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return DIV; }
+"<"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return LT;  }
+"<="    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return LTE; }
+">"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return GT;  }
+">="    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return GTE; }
+"=="    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return EQ;  }
+"!="    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return NEQ; }
+"="     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return ASSIN;}
 
-";"     {pos_start = pos_end;  pos_end += yyleng;   return SEMICOLON;   }
-","     {pos_start = pos_end;  pos_end += yyleng;   return COMMA;       }
-"("     {pos_start = pos_end;  pos_end += yyleng;   return LPARENTHESE; }
-")"     {pos_start = pos_end;  pos_end += yyleng;   return RPARENTHESE; }
-"["     {pos_start = pos_end;  pos_end += yyleng;   return LBRACKET;    }
-"]"     {pos_start = pos_end;  pos_end += yyleng;   return RBRACKET;    }
-"[]"    {pos_start = pos_end;  pos_end += yyleng;   return ARRAY;       }
-"{"     {pos_start = pos_end;  pos_end += yyleng;   return LBRACE;      }
-"}"     {pos_start = pos_end;  pos_end += yyleng;   return RBRACE;      }
+";"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return SEMICOLON;   }
+","     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return COMMA;       }
+"("     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return LPARENTHESE; }
+")"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return RPARENTHESE; }
+"["     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return LBRACKET;    }
+"]"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return RBRACKET;    }
+"[]"    {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return ARRAY;       }
+"{"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return LBRACE;      }
+"}"     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return RBRACE;      }
 
 "/*"            {BEGIN(comment);    pos_end += 2;   }
 <comment>\n     {pos_start = pos_end = 1;   ++lines;}
@@ -62,9 +62,9 @@ float   {pos_start = pos_end;  pos_end += yyleng;   return FLOAT;   }
 <comment>.      {++pos_end;}
 
 {ws}        {pos_start = pos_end;  pos_end += yyleng;   return BLANK;       }
-{integer}   {pos_start = pos_end;  pos_end += yyleng;   return INTEGER;     }
-{float}     {pos_start = pos_end;  pos_end += yyleng;   return FLOATPOINT;  }
-{id}        {pos_start = pos_end;  pos_end += yyleng;   return IDENTIFIER;  }
+{integer}   {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return INTEGER;     }
+{float}     {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return FLOATPOINT;  }
+{id}        {pos_start = pos_end;  pos_end += yyleng;   pass_node(yytext);  return IDENTIFIER;  }
 \n          {pos_start = pos_end = 1;   ++lines;}
 . {return ERROR;}
 
