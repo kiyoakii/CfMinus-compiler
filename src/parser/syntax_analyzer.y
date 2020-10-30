@@ -36,116 +36,133 @@ syntax_tree_node *node(const char *node_name, int children_num, ...);
 
 %%
 
-program : declaration-list { 
-                $$ = node("program", 1, $1); gt->root = $$; 
-            };
+program 
+: declaration-list { 
+    $$ = node("program", 1, $1); gt->root = $$; 
+};
 
-declaration-list    : declaration-list declaration { $$ = node("declaration-list", 2, $1, $2); gt->root = $$; }
-                    | declaration { $$ = node("declaration-list", 1, $1); gt->root = $$; };
+declaration-list    
+: declaration-list declaration { $$ = node("declaration-list", 2, $1, $2); gt->root = $$; }
+| declaration { $$ = node("declaration-list", 1, $1); gt->root = $$; };
 
-declaration : var-declaration { $$ = node("declaration", 1, $1); gt->root = $$; }
-            | fun-declaration { $$ = node("declaration", 1, $1); gt->root = $$; };
+declaration 
+: var-declaration { $$ = node("declaration", 1, $1); gt->root = $$; }
+| fun-declaration { $$ = node("declaration", 1, $1); gt->root = $$; };
 
-var-declaration : type-specifier IDENTIFIER SEMICOLON { 
-                    $$ = node("var-declaration", 3, $1, $2, $3); gt->root = $$; 
-                }
-                | type-specifier IDENTIFIER LBRACKET INTEGER RBRACKET SEMICOLON { 
-                    $$ = node("var-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$; 
-                };
+var-declaration 
+: type-specifier IDENTIFIER SEMICOLON { 
+    $$ = node("var-declaration", 3, $1, $2, $3); gt->root = $$; 
+}
+| type-specifier IDENTIFIER LBRACKET INTEGER RBRACKET SEMICOLON { 
+    $$ = node("var-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$; 
+};
 
-type-specifier  : INT {
-                    $$ = node("type-specifier", 1, $1); gt->root = $$;
-                }
-                | FLOAT{
-                    $$ = node("type-specifier", 1, $1); gt->root = $$;
-                }
-                | VOID{
-                    $$ = node("type-specifier", 1, $1); gt->root = $$;
-                };
+type-specifier  
+: INT {
+    $$ = node("type-specifier", 1, $1); gt->root = $$;
+}
+| FLOAT{
+    $$ = node("type-specifier", 1, $1); gt->root = $$;
+}
+| VOID{
+    $$ = node("type-specifier", 1, $1); gt->root = $$;
+};
 
-fun-declaration : type-specifier IDENTIFIER LPARENTHESE params RPARENTHESE compound-stmt {
-                    $$ = node("fun-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$;
-                };
+fun-declaration 
+: type-specifier IDENTIFIER LPARENTHESE params RPARENTHESE compound-stmt {
+    $$ = node("fun-declaration", 6, $1, $2, $3, $4, $5, $6); gt->root = $$;
+};
 
-params  : param-list{
-            $$ = node("params", 1, $1); gt->root = $$;
-        }
-        | VOID{
-            $$ = node("params", 1, $1); gt->root = $$;
-        };
+params  
+: param-list{
+    $$ = node("params", 1, $1); gt->root = $$;
+}
+| VOID{
+    $$ = node("params", 1, $1); gt->root = $$;
+};
 
-param-list  : param-list COMMA param {
-                $$ = node("param-list", 3, $1, $2, $3); gt->root = $$;
-            }
-            | param {
-                $$ = node("param-list", 1, $1); gt->root = $$;
-            };
+param-list  
+: param-list COMMA param {
+    $$ = node("param-list", 3, $1, $2, $3); gt->root = $$;
+}
+| param {
+    $$ = node("param-list", 1, $1); gt->root = $$;
+};
 
-param   : type-specifier IDENTIFIER {
-            $$ = node("param", 2, $1, $2); gt->root = $$;
-        }
-        | type-specifier IDENTIFIER ARRAY {
-            $$ = node("param", 3, $1, $2, $3); gt->root = $$;
-        };
+param   
+: type-specifier IDENTIFIER {
+    $$ = node("param", 2, $1, $2); gt->root = $$;
+}
+| type-specifier IDENTIFIER ARRAY {
+    $$ = node("param", 3, $1, $2, $3); gt->root = $$;
+};
 
-compound-stmt : LBRACE local-declarations statement-list RBRACE {
+compound-stmt 
+: LBRACE local-declarations statement-list RBRACE {
     $$ = node("compound-stmt", 4, $1, $2, $3, $4); gt->root = $$;
 };
 
-local-declarations  : local-declarations var-declaration {
-                        $$ = node("local-declarations", 2, $1, $2); gt->root = $$;
-                    }
-                    | %empty {
-                        $$ = node("local-declarations", 0); gt->root = $$;
-                    };
+local-declarations  
+: local-declarations var-declaration {
+    $$ = node("local-declarations", 2, $1, $2); gt->root = $$;
+}
+| %empty {
+    $$ = node("local-declarations", 0); gt->root = $$;
+};
 
-statement-list  : statement-list statement {
-                    $$ = node("statement-list", 2, $1, $2); gt->root = $$;
-                }
-                | %empty {
-                    $$ = node("statement-list", 0); gt->root = $$;
-                };
+statement-list  
+: statement-list statement {
+    $$ = node("statement-list", 2, $1, $2); gt->root = $$;
+}
+| %empty {
+    $$ = node("statement-list", 0); gt->root = $$;
+};
 
-statement   : expression-stmt {
-                $$ = node("statement", 1, $1); gt->root = $$;
-            }
-            | compound-stmt {
-                $$ = node("statement", 1, $1); gt->root = $$;
-            }
-            | selection-stmt {
-                $$ = node("statement", 1, $1); gt->root = $$;
-            }
-            | iteration-stmt {
-                $$ = node("statement", 1, $1); gt->root = $$;
-            }
-            | return-stmt {
-                $$ = node("statement", 1, $1); gt->root = $$;
-            };
+statement   
+: expression-stmt {
+    $$ = node("statement", 1, $1); gt->root = $$;
+}
+| compound-stmt {
+    $$ = node("statement", 1, $1); gt->root = $$;
+}
+| selection-stmt {
+    $$ = node("statement", 1, $1); gt->root = $$;
+}
+| iteration-stmt {
+    $$ = node("statement", 1, $1); gt->root = $$;
+}
+| return-stmt {
+    $$ = node("statement", 1, $1); gt->root = $$;
+};
 
-expression-stmt : expression SEMICOLON {
-                    $$ = node("expression-stmt", 2, $1, $2); gt->root = $$;
-                }
-                | SEMICOLON{
-                    $$ = node("expression-stmt", 1, $1); gt->root = $$;
-                };
+expression-stmt 
+: expression SEMICOLON {
+    $$ = node("expression-stmt", 2, $1, $2); gt->root = $$;
+}
+| SEMICOLON{
+    $$ = node("expression-stmt", 1, $1); gt->root = $$;
+};
 
-selection-stmt : IF LPARENTHESE expression RPARENTHESE statement {
-                    $$ = node("selection-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
-                }
-                | IF LPARENTHESE expression RPARENTHESE statement ELSE statement {
-                    $$ = node("selection-stmt", 7, $1, $2, $3, $4, $5, $6, $7); gt->root = $$;
-                };
+selection-stmt 
+: IF LPARENTHESE expression RPARENTHESE statement {
+    $$ = node("selection-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
+}
+| IF LPARENTHESE expression RPARENTHESE statement ELSE statement {
+    $$ = node("selection-stmt", 7, $1, $2, $3, $4, $5, $6, $7); gt->root = $$;
+};
 
-iteration-stmt : WHILE LPARENTHESE expression RPARENTHESE statement {
-                    $$ = node("iteration-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
-                };
+iteration-stmt 
+: WHILE LPARENTHESE expression RPARENTHESE statement {
+    $$ = node("iteration-stmt", 5, $1, $2, $3, $4, $5); gt->root = $$;
+};
 
-return-stmt : RETURN SEMICOLON {
-                $$ = node("return-stmt", 2, $1, $2); gt->root = $$;
-            }
-            | RETURN expression SEMICOLON {
-                $$ = node("return-stmt", 3, $1, $2, $3); gt->root = $$;
-            };
+return-stmt 
+: RETURN SEMICOLON {
+    $$ = node("return-stmt", 2, $1, $2); gt->root = $$;
+}
+| RETURN expression SEMICOLON {
+    $$ = node("return-stmt", 3, $1, $2, $3); gt->root = $$;
+};
 
 expression 
 : var ASSIN expression {
