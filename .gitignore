@@ -3,3 +3,5 @@ build
 .vscode
 lex.yy.c
 .DS_Store
+.idea
+cmake-build-debug
