@@ -33,6 +33,18 @@ scope.exit()
 scope.push(f)
 ```
 
+### VarDeclaration
+
+包含：type, Num
+
+```pseudocode
+if num not nullptr:
+    global_v = create arr
+else:
+    global_v = create num
+scope.push(global_v)
+```
+
 ### Param
 
 包含：type, id
@@ -49,7 +61,6 @@ global_v = param
 ```pseudocode
 scope.enter()
 for d in local_decl:
-	  dynamic static
     visit d // 注意这里，因为已经有底层函数了，无需任何其它动作
 for s in statement_list:
     visit s
@@ -64,11 +75,6 @@ for s in statement_list:
 * selection_stmt
 * iteration_stmt
 * return-stmt
-
-```pseudocode
-dynamic static
-visit
-```
 
 ### Expression_stmt
 
