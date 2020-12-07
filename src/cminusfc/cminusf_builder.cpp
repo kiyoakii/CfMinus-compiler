@@ -140,7 +140,7 @@ void CminusfBuilder::visit(ASTCompoundStmt &node) {
         d->accept(*this);
     }
     for (auto &s : node.statement_list) {
-        d->accept(*this);
+        s->accept(*this);
     }
 }
 
