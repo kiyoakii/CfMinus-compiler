@@ -111,6 +111,51 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     scope.push(node.id, func);
 }
 
+void CminusfBuilder::visit(ASTVarDeclaration &node) {
+    if (node.num != nullptr) {
+        // array
+        if (node.type == TYPE_INT) {
+            auto int_t = Type::get_int32_type(module.get());
+            auto array_t = ArrayType::get_array_type(int_t, node.num->i_val);
+            if (scope.in_global()){
+                auto initializer = ConstantZero::get(array_t, module.get());
+                global_v = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
+            } else {
+                global_v = builder->create_alloca(array_t);
+            }
+        } else if (node.type == TYPE_FLOAT) {
+            auto float_t = Type::get_float_type(module.get());
+            auto array_t = ArrayType::get_array_type(float_t, node.num->f_val);
+            if (scope.in_global()) {
+                auto initializer = ConstantZero::get(array_t, module.get());
+                global_v = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
+            } else {
+                global_v = builder->create_alloca(array_t);
+            }
+        }
+    } else {
+        // variable
+        if (node.type == TYPE_INT) {
+            auto int_t = Type::get_int32_type(module.get());
+            if (scope.in_global()) {
+                auto initializer = ConstantZero::get(int_t, module.get());
+                global_v = GlobalVariable::create("global" + std::to_string(name_count++), module.get(), int_t, false, initializer);
+            } else {
+                global_v = builder->create_alloca(int_t);
+            }
+        } else if (node.type == TYPE_FLOAT) {
+            auto float_t = Type::get_float_type(module.get());
+            if (builder->get_insert_block() == nullptr) {
+                auto initializer = ConstantZero::get(float_t, module.get());
+                global_v = GlobalVariable::create("global" + std::to_string(name_count++), module.get(), float_t, false, initializer);
+            } else {
+                global_v = builder->create_alloca(float_t);
+            }
+        }
+    }
+
+    scope.push(node.id, global_v);
+}
 
 void CminusfBuilder::visit(ASTParam &node) {
     if (node.isarray) {
@@ -152,57 +197,31 @@ void CminusfBuilder::visit(ASTNum &node) {
     }
 }
 
-void CminusfBuilder::visit(ASTVarDeclaration &node) {
-    if (node.num != nullptr) {
-        // array
-        if (node.type == TYPE_INT) {
-            auto int_t = Type::get_int32_type(module.get());
-            auto array_t = ArrayType::get_array_type(int_t, node.num->i_val);
-            if (builder->get_insert_block() == nullptr) {
-                auto initializer = ConstantZero::get(array_t, module.get());
-                auto gv = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
-            } else {
-                builder->create_alloca(array_t);
-            }
-        } else if (node.type == TYPE_FLOAT) {
-            auto float_t = Type::get_float_type(module.get());
-            auto array_t = ArrayType::get_array_type(float_t, node.num->f_val);
-            if (builder->get_insert_block() == nullptr) {
-                auto initializer = ConstantZero::get(array_t, module.get());
-                auto gv = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
-            } else {
-                builder->create_alloca(array_t);
-            }
-        }
-    } else {
-        // variable
-        if (node.type == TYPE_INT) {
-            auto int_t = Type::get_int32_type(module.get());
-            if (builder->get_insert_block() == nullptr) {
-                auto initializer = ConstantZero::get(int_t, module.get());
-                GlobalVariable::create("global" + std::to_string(name_count++), module.get(), int_t, false, initializer);
-            } else {
-                builder->create_alloca(int_t);
-            }
-        } else if (node.type == TYPE_FLOAT) {
-            auto float_t = Type::get_float_type(module.get());
-            if (builder->get_insert_block() == nullptr) {
-                auto initializer = ConstantZero::get(float_t, module.get());
-                GlobalVariable::create("global" + std::to_string(name_count++), module.get(), float_t, false, initializer);
-            } else {
-                builder->create_alloca(float_t);
-            }
-        }
+void CminusfBuilder::visit(ASTExpressionStmt &node) {
+    if (node.expression != nullptr) {
+        node.expression->accept(*this);
     }
-
 }
 
+void CminusfBuilder::visit(ASTSelectionStmt &node) {
+    node.expression->accept(*this);
+    auto cmp = global_v;
+    auto parent_func = builder->get_insert_block()->get_parent();
+    auto trueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
+    auto falseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
+    auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
+    builder->create_cond_br(cmp, trueBB, falseBB);
 
+    builder->set_insert_point(trueBB);
+    node.if_statement->accept(*this);
 
+    if (node.else_statement != nullptr) {
+        builder->set_insert_point(falseBB);
+        node.else_statement->accept(*this);
+    }
 
-void CminusfBuilder::visit(ASTExpressionStmt &node) { }
-
-void CminusfBuilder::visit(ASTSelectionStmt &node) { }
+    builder->set_insert_point(retBB);
+}
 
 void CminusfBuilder::visit(ASTIterationStmt &node) { }
 
