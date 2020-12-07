@@ -204,12 +204,13 @@ void CminusfBuilder::visit(ASTExpressionStmt &node) {
 }
 
 void CminusfBuilder::visit(ASTSelectionStmt &node) {
-    node.expression->accept(*this);
-    auto cmp = global_v;
     auto parent_func = builder->get_insert_block()->get_parent();
     auto trueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
     auto falseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
     auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
+
+    node.expression->accept(*this);
+    auto cmp = global_v;
     builder->create_cond_br(cmp, trueBB, falseBB);
 
     builder->set_insert_point(trueBB);
@@ -223,11 +224,27 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     builder->set_insert_point(retBB);
 }
 
-void CminusfBuilder::visit(ASTIterationStmt &node) { }
+void CminusfBuilder::visit(ASTIterationStmt &node) {
+    auto parent_func = builder->get_insert_block()->get_parent();
+    auto iterBB = BasicBlock::create(module.get(), "IterationBB", parent_func);
+    auto conBB = BasicBlock::create(module.get(), "ConditionBB", parent_func);
+    auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
+
+    builder->set_insert_point(conBB);
+    node.expression->accept(*this);
+    auto cmp = global_v;
+    builder->create_cond_br(cmp, iterBB, retBB);
+
+    builder->set_insert_point(iterBB);
+    node.statement->accept(*this);
+    builder->create_br(conBB);
+
+    builder->set_insert_point(retBB);
+}
 
 void CminusfBuilder::visit(ASTReturnStmt &node) {
     if (node.expression == nullptr) {
-        // 检查是否函数本身真的是void型
+        // check whether the function is really void type
         auto current_f = builder->get_insert_block()->get_parent();
         if (!current_f->get_return_type()->is_void_type()) {
             std::cout << "Not right! Current function should not return void type" << std::endl;
@@ -237,15 +254,7 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         }
     } else {
         node.expression->accept(*this);
-        // auto assign_expr = dynamic_cast<ASTAssignExpression*>(&node.expression);
-        // if (assign_expr) {
-        //     assign_expr->accept(*this);
-        // }
-        // auto simple_expr = dynamic_cast<ASTSimpleExpression*>(&node.expression);
-        // if (simple_expr) {
-        //     simple_expr->accept(*this);
-        // }
-        // builder->create_ret(global_v);
+        builder->create_ret(global_v);
     }
 }
 
