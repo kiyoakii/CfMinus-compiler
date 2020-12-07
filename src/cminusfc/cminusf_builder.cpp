@@ -22,15 +22,109 @@ size_t name_count;
  * scope.find: find and return the value bound to the name
  */
 
-void CminusfBuilder::visit(ASTProgram &node) { }
+// TODO: add INT1 support
 
-void CminusfBuilder::visit(ASTNum &node) { }
+void CminusfBuilder::visit(ASTProgram &node) {
+    for (auto &decl : node.declarations) {
+        decl->accept(*this);
+    }
+    // 下面的代码是错误尝试，报告中详细解释。
+    // for (auto &decl : node.declarations) {
+    //     auto var_decl = dynamic_cast<ASTVarDeclaration*>(&node);
+    //     if (var_decl) {
+    //         // var_decl->accept(*this);
+    //         if (var_decl->num == nullptr) {
+    //             // 声明变量
+    //             Value* var_alloca;
+    //             if (var_decl->type == TYPE_INT) {
+    //                 auto int_t = Type::get_int32_type(module.get());
+    //                 auto initializer = ConstantZero::get(int_t, module.get());
+    //                 var_alloca = GlobalVariable::create("global_v" + std::to_string(name_count++), module.get(), int_t, false, initializer);
+    //                 // var_alloca = builder->create_alloca(int_t);
+    //             } else if (var_decl->type == TYPE_FLOAT) {
+    //                 auto float_t = Type::get_float_type(module.get());
+    //                 auto initializer = ConstantZero::get(float_t, module.get());
+    //                 var_alloca = GlobalVariable::create("global_v" + std::to_string(name_count++), module.get(), float_t, false, initializer);
+    //             }
+    //             scope.push(var_decl->id, var_alloca);
+    //         } else {
+    //             // 声明数组
+    //             Value* arr_alloca;
+    //             if (var_decl->type == TYPE_INT) {
+    //                 auto int_t = Type::get_int32_type(module.get());
+    //                 if (var_decl->num->i_val < 0) {
+    //                     builder->create_call(scope.find("neg_idx_except_fun"), {});
+    //                 }
+    //                 auto arr_t = Type::get_array_type(int_t, var_decl->num->i_val);
+    //                 auto initializer = ConstantZero::get(arr_t, module.get());
+    //                 arr_alloca = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), arr_t, false, initializer);
+    //                 // arr_alloca = builder->create_alloca(arr_t);
+    //             } else if (var_decl->type == TYPE_FLOAT) {
+    //                 auto float_t = Type::get_float_type(module.get());
+    //                 auto arr_t = Type::get_array_type(float_t, var_decl->num->i_val);
+    //                 auto initializer = ConstantZero::get(arr_t, module.get());
+    //                 arr_alloca = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), arr_t, false, initializer);
+    //                 // arr_alloca = builder->create_alloca(arr_t);
+    //             }
+    //             scope.push(var_decl->id, arr_alloca);
+    //         }
+    //         continue;
+    //     }
+
+    //     auto fun_decl = dynamic_cast<ASTFunDeclaration*>(&node);
+    //     if (fun_decl) {
+    //         fun_decl->accept(*this);
+    //         continue;
+    //     }
+    // }
+}
+
+void CminusfBuilder::visit(ASTFunDeclaration &node) {
+    scope.enter();
+    std::vector<Value*> param_l;
+    std::vector<Type*> param_t;
+    for (auto &p : node.params) {
+        p->accept(*this);
+        param_l.push_back(global_v.get());
+        if (p->type == TYPE_INT) {
+            param_t.push_back(Type::get_int32_type(module.get()));
+        } else if (p->type == TYPE_FLOAT) {
+            param_t.push_back(Type::get_float_type(module.get()));
+        }
+    }
+
+    FunctionType* func_t;
+    if (node.type == TYPE_INT) {
+        func_t = FunctionType::get(Type::get_int32_type(module.get()), param_t);
+    } else if (node.type == TYPE_FLOAT) {
+        func_t = FunctionType::get(Type::get_float_type(module.get()), param_t);
+    } else if (node.type == TYPE_VOID) {
+        func_t = FunctionType::get(Type::get_void_type(module.get()), param_t);
+    }
+    auto func = Function::create(func_t, node.id, module.get());
+    auto entryBB = BasicBlock::create(module.get(), "entry", func);
+    builder->set_insert_point(entryBB);
+    
+    node.compound_stmt->accept(*this);
+    
+    scope.exit();
+    scope.push(node.id, func);
+}
+
+
+
+void CminusfBuilder::visit(ASTNum &node) {
+    if (node.type == TYPE_FLOAT) {
+        global_v = std::make_shared<Value>(CONST_FP(node.f_val));
+    } else if (node.type == TYPE_INT) {
+        global_v = std::make_shared<Value>(ConstantInt::get(node.i_val, module.get()));
+    }
+}
 
 void CminusfBuilder::visit(ASTVarDeclaration &node) { }
 
-void CminusfBuilder::visit(ASTFunDeclaration &node) { }
+}
 
-void CminusfBuilder::visit(ASTParam &node) { }
 
 void CminusfBuilder::visit(ASTCompoundStmt &node) { }
 
