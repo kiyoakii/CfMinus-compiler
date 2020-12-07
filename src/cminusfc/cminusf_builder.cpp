@@ -258,26 +258,18 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
     }
 }
 
-void CminusfBuilder::visit(ASTVar &node) {
-    if (node.expression != nullptr) {
-        auto v = scope.find(node.id);
-        node.expression->accept(*this);
-        builder->create_load(v);
-    }
-}
-
 void CminusfBuilder::visit(ASTAssignExpression &node) {
-
+    node.var->accept(*this);
+    auto v = global_v;
+    node.expression->accept(*this);
+    builder->create_store(v, global_v);
 }
 
 void CminusfBuilder::visit(ASTSimpleExpression &node) {
-    if (node.additive_expression_r == nullptr) {
-        node.additive_expression_l->accept(*this);
-    } else {
-        node.additive_expression_l->accept(*this);
-        auto l = global_v;
+    node.additive_expression_l->accept(*this);
+    if (node.additive_expression_r != nullptr) {
+        auto lLoad = builder->create_load(global_v);   
         node.additive_expression_r->accept(*this);
-        auto lLoad = builder->create_load(l.get());
         auto rLoad = builder->create_load(global_v);
         
         if (lLoad->get_type()->is_integer_type()) {
@@ -313,6 +305,14 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
                 std::abort();
             }
         }
+    }
+}
+
+void CminusfBuilder::visit(ASTVar &node) {
+    if (node.expression != nullptr) {
+        auto v = scope.find(node.id);
+        node.expression->accept(*this);
+        builder->create_load(v);
     }
 }
 
