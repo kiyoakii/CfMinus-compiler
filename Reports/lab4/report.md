@@ -163,9 +163,10 @@ create_store(v, global_v)
 ```
 visit additive_expression_l
 if additive_expression_r not nullptr:
-    l = global_v
+    l = load global_v
     visit additive_expression_r
-    global_v = create_cmp_op(l, global_v)
+    r = load global_v
+    global_v = create_cmp_op(l, r)
 ```
 
 ### AdditiveExpression
@@ -175,9 +176,10 @@ if additive_expression_r not nullptr:
 ```
 visit term
 if additive_expression not nullptr:
-		r = global_v
+		r = load global_v
     visit additive_expression
-    global_v = create_op(global_v， r)
+    l = load global_v
+    global_v = create_op(l， r)
 ```
 
 ### Term
