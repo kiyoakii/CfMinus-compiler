@@ -10,7 +10,7 @@
 // You can define global variables here
 // to store state
 
-std::shared_ptr<Value> global_v;
+Value* global_v;
 std::vector<BasicBlock*> bb_stack;
 size_t name_count;
 
@@ -85,7 +85,7 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     std::vector<Type*> param_t;
     for (auto &p : node.params) {
         p->accept(*this);
-        param_l.push_back(global_v.get());
+        param_l.push_back(global_v);
         if (p->type == TYPE_INT) {
             param_t.push_back(Type::get_int32_type(module.get()));
         } else if (p->type == TYPE_FLOAT) {
@@ -116,22 +116,22 @@ void CminusfBuilder::visit(ASTParam &node) {
     if (node.isarray) {
         if (node.type == TYPE_INT) {
             auto arr_t = Type::get_int32_ptr_type(module.get());
-            global_v = std::make_shared<Value>(builder->create_alloca(arr_t));
+            global_v = builder->create_alloca(arr_t);
         } else if (node.type == TYPE_FLOAT) {
             auto arr_t = Type::get_float_ptr_type(module.get());
-            global_v = std::make_shared<Value>(builder->create_alloca(arr_t));
+            global_v = builder->create_alloca(arr_t);
         }
     } else {
         if (node.type == TYPE_INT) {
             auto int_t = Type::get_int32_type(module.get());
-            global_v = std::make_shared<Value>(builder->create_alloca(int_t));
+            global_v = builder->create_alloca(int_t);
         } else if (node.type == TYPE_FLOAT) {
             auto float_t = Type::get_float_type(module.get());
-            global_v = std::make_shared<Value>(builder->create_alloca(float_t));
+            global_v = builder->create_alloca(float_t);
         }
     }
 
-    scope.push(node.id, global_v.get());
+    scope.push(node.id, global_v);
 }
 
 void CminusfBuilder::visit(ASTCompoundStmt &node) {
@@ -146,9 +146,9 @@ void CminusfBuilder::visit(ASTCompoundStmt &node) {
 
 void CminusfBuilder::visit(ASTNum &node) {
     if (node.type == TYPE_FLOAT) {
-        global_v = std::make_shared<Value>(CONST_FP(node.f_val));
+        global_v = CONST_FP(node.f_val);
     } else if (node.type == TYPE_INT) {
-        global_v = std::make_shared<Value>(ConstantInt::get(node.i_val, module.get()));
+        global_v = ConstantInt::get(node.i_val, module.get());
     }
 }
 
@@ -226,7 +226,7 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         // if (simple_expr) {
         //     simple_expr->accept(*this);
         // }
-        // builder->create_ret(global_v.get());
+        // builder->create_ret(global_v);
     }
 }
 
@@ -250,7 +250,7 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
         auto l = global_v;
         node.additive_expression_r->accept(*this);
         auto lLoad = builder->create_load(l.get());
-        auto rLoad = builder->create_load(global_v.get());
+        auto rLoad = builder->create_load(global_v);
         
         if (lLoad->get_type()->is_integer_type()) {
             if (node.op == OP_LT) {
@@ -291,15 +291,15 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
 void CminusfBuilder::visit(ASTAdditiveExpression &node) {
     if (node.additive_expression != nullptr) {
         node.additive_expression->accept(*this);
-        auto left = global_v.get();
+        auto left = global_v;
         node.term->accept(*this);
         if (left->get_type()->is_integer_type()) {
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_iadd(left, global_v.get());
+                    builder->create_iadd(left, global_v);
                     break;
                 case OP_MINUS:
-                    builder->create_iadd(left, global_v.get());
+                    builder->create_iadd(left, global_v);
                     break;
                 default:
                     // err
@@ -308,10 +308,10 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         } else if (left->get_type()->is_float_type()) {
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_fadd(left, global_v.get());
+                    builder->create_fadd(left, global_v);
                     break;
                 case OP_MINUS:
-                    builder->create_fadd(left, global_v.get());
+                    builder->create_fadd(left, global_v);
                     break;
                 default:
                     // err
@@ -327,9 +327,9 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
 void CminusfBuilder::visit(ASTTerm &node) {
     if (node.term != nullptr) {
         node.term->accept(*this);
-        auto l = global_v.get();
+        auto l = global_v;
         node.factor->accept(*this);
-        auto r = global_v.get();
+        auto r = global_v;
         if (l->get_type()->is_float_type() or r->get_type()->is_float_type()) {
             switch (node.op) {
                 case OP_MUL:
@@ -365,7 +365,7 @@ void CminusfBuilder::visit(ASTCall &node) {
     std::vector<Value*> args;
     for (auto &a : node.args) {
         a->accept(*this);
-        args.push_back(global_v.get());
+        args.push_back(global_v);
     }
     builder->create_call(f, args);
 }
