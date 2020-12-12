@@ -310,8 +310,7 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             }
         } else if (rLoad->get_type()->is_float_type() and lLoad->get_type()->is_integer_type()) {
             auto float_t = Type::get_float_type(module.get());
-            auto l = builder->create_sitofp(lLoad, float_t);
-            lLoad = builder->create_load(l);
+            lLoad = builder->create_sitofp(lLoad, float_t);
             if (node.op == OP_LT) {
                 builder->create_fcmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
