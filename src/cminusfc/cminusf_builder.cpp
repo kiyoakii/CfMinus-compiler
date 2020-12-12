@@ -11,6 +11,7 @@
 // to store state
 
 Value* global_v;
+Value* global_p;
 std::vector<BasicBlock*> bb_stack;
 size_t name_count;
 
@@ -125,7 +126,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             }
         } else if (node.type == TYPE_FLOAT) {
             auto float_t = Type::get_float_type(module.get());
-            auto array_t = ArrayType::get_array_type(float_t, node.num->f_val);
+            auto array_t = ArrayType::get_array_type(float_t, node.num->i_val);
             if (scope.in_global()) {
                 auto initializer = ConstantZero::get(array_t, module.get());
                 global_v = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
@@ -260,19 +261,20 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
 
 void CminusfBuilder::visit(ASTAssignExpression &node) {
     node.var->accept(*this);
-    auto v = global_v;
+    auto p = global_p;
+    // Note that p must be pointer, not loaded value
     node.expression->accept(*this);
-    builder->create_store(v, global_v);
+    builder->create_store(p, global_v);
 }
 
 void CminusfBuilder::visit(ASTSimpleExpression &node) {
     node.additive_expression_l->accept(*this);
     if (node.additive_expression_r != nullptr) {
-        auto lLoad = builder->create_load(global_v);   
+        auto lLoad = global_v;
         node.additive_expression_r->accept(*this);
-        auto rLoad = builder->create_load(global_v);
-        
-        if (lLoad->get_type()->is_integer_type()) {
+        auto rLoad = global_v;
+
+        if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_integer_type()) {
             if (node.op == OP_LT) {
                 builder->create_icmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
@@ -288,7 +290,28 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             } else {
                 std::abort();
             }
-        } else if (lLoad->get_type()->is_float_type()) {
+        } else if (lLoad->get_type()->is_float_type() and rLoad->get_type()->is_integer_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            rLoad = builder->create_sitofp(rLoad, float_t);
+            if (node.op == OP_LT) {
+                builder->create_fcmp_lt(lLoad, rLoad);
+            } else if (node.op == OP_LE) {
+                builder->create_fcmp_le(lLoad, rLoad);
+            } else if (node.op == OP_GE) {
+                builder->create_fcmp_ge(lLoad, rLoad);
+            } else if (node.op == OP_GT) {
+                builder->create_fcmp_gt(lLoad, rLoad);
+            } else if (node.op == OP_EQ) {
+                builder->create_fcmp_eq(lLoad, rLoad);
+            } else if (node.op == OP_NEQ) {
+                builder->create_fcmp_ne(lLoad, rLoad);
+            } else {
+                std::abort();
+            }
+        } else if (rLoad->get_type()->is_float_type() and lLoad->get_type()->is_integer_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            auto l = builder->create_sitofp(lLoad, float_t);
+            lLoad = builder->create_load(l);
             if (node.op == OP_LT) {
                 builder->create_fcmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
@@ -308,48 +331,82 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
     }
 }
 
-void CminusfBuilder::visit(ASTVar &node) {
-    if (node.expression != nullptr) {
-        auto v = scope.find(node.id);
-        node.expression->accept(*this);
-        builder->create_load(v);
-    }
-}
-
 void CminusfBuilder::visit(ASTAdditiveExpression &node) {
+    node.term->accept(*this);
     if (node.additive_expression != nullptr) {
+        auto rLoad = builder->create_load(global_v);
         node.additive_expression->accept(*this);
-        auto left = global_v;
+        auto lLoad = builder->create_load(global_v);
         node.term->accept(*this);
-        if (left->get_type()->is_integer_type()) {
+        if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_integer_type()) {
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_iadd(left, global_v);
+                    builder->create_iadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_iadd(left, global_v);
+                    builder->create_iadd(lLoad, rLoad);
                     break;
                 default:
                     // err
                     std::abort();
             }
-        } else if (left->get_type()->is_float_type()) {
-            switch (node.op) {
+        } else if (lLoad->get_type()->is_float_type() or rLoad->get_type()->is_float_type()) {
+            if (rLoad->get_type()->is_float_type()) {
+                switch (node.op) {
                 case OP_PLUS:
-                    builder->create_fadd(left, global_v);
+                    // auto int_l = builder->create_load(l);
+                    builder->create_fadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_fadd(left, global_v);
+                    builder->create_fadd(lLoad, rLoad);
                     break;
                 default:
                     // err
                     std::abort();
+                }
+            } else if (rLoad->get_type()->is_integer_type()) {
+                switch (node.op) {
+                case OP_PLUS:
+                    builder->create_sitofp(rLoad);
+                    builder->create_fadd(lLoad, rLoad);
+                    break;
+                case OP_MINUS:
+                    builder->create_fadd(lLoad, rLoad);
+                    break;
+                default:
+                    // err
+                    std::abort();
+                }
             }
+            
         }
     } else {
         node.term->accept(*this);
     }
     
+}
+
+void CminusfBuilder::visit(ASTVar &node) {
+    if (node.expression != nullptr) {
+        auto parent_func = builder->get_insert_block()->get_parent();
+        auto TrueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
+        auto FalseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
+
+        node.expression->accept(*this);
+        auto index = global_v;
+        auto int_t = Type::get_int32_type(module.get());
+        auto cmp = builder->create_icmp_lt(index, CONST_ZERO(int_t));
+        builder->create_br(cmp, TrueBB, FalseBB);
+        builder->set_insert_point(FalseBB);
+        builder->create_call(scope.find("neg_idx_error"), {});
+
+        builder->set_insert_point(TrueBB);
+        global_p = builder->create_gep(scope.find(node.id), {CONST_ZERO(int_t), index});
+        global_v = builder->create_load(global_p);
+    } else {
+        global_p = scope.find(node.id);
+        global_v = builder->create_load(global_p);
+    }
 }
 
 void CminusfBuilder::visit(ASTTerm &node) {
