@@ -325,6 +325,22 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             } else {
                 std::abort();
             }
+        } else {
+            if (node.op == OP_LT) {
+                builder->create_fcmp_lt(lLoad, rLoad);
+            } else if (node.op == OP_LE) {
+                builder->create_fcmp_le(lLoad, rLoad);
+            } else if (node.op == OP_GE) {
+                builder->create_fcmp_ge(lLoad, rLoad);
+            } else if (node.op == OP_GT) {
+                builder->create_fcmp_gt(lLoad, rLoad);
+            } else if (node.op == OP_EQ) {
+                builder->create_fcmp_eq(lLoad, rLoad);
+            } else if (node.op == OP_NEQ) {
+                builder->create_fcmp_ne(lLoad, rLoad);
+            } else {
+                std::abort();
+            }
         }
     }
 }
@@ -332,85 +348,118 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
 void CminusfBuilder::visit(ASTAdditiveExpression &node) {
     node.term->accept(*this);
     if (node.additive_expression != nullptr) {
-        auto rLoad = builder->create_load(global_v);
+        auto rLoad = global_v;
         node.additive_expression->accept(*this);
-        auto lLoad = builder->create_load(global_v);
-        node.term->accept(*this);
+        auto lLoad = global_v;
         if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_integer_type()) {
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_iadd(lLoad, rLoad);
+                    global_v = builder->create_iadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_iadd(lLoad, rLoad);
+                    global_v = builder->create_isub(lLoad, rLoad);
                     break;
                 default:
                     // err
                     std::abort();
             }
-        } else if (lLoad->get_type()->is_float_type() or rLoad->get_type()->is_float_type()) {
-            if (rLoad->get_type()->is_float_type()) {
-                switch (node.op) {
+        } else if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_float_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            lLoad = builder->create_sitofp(lLoad, float_t);
+            switch (node.op) {
                 case OP_PLUS:
-                    // auto int_l = builder->create_load(l);
                     builder->create_fadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_fadd(lLoad, rLoad);
+                    builder->create_fsub(lLoad, rLoad);
                     break;
                 default:
                     // err
                     std::abort();
-                }
-            } else if (rLoad->get_type()->is_integer_type()) {
-                switch (node.op) {
-                case OP_PLUS:
-                    builder->create_sitofp(rLoad);
-                    builder->create_fadd(lLoad, rLoad);
-                    break;
-                case OP_MINUS:
-                    builder->create_fadd(lLoad, rLoad);
-                    break;
-                default:
-                    // err
-                    std::abort();
-                }
             }
-            
+        } else if (rLoad->get_type()->is_integer_type() and lLoad->get_type()->is_float_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            rLoad = builder->create_sitofp(rLoad, float_t);
+            switch (node.op) {
+                case OP_PLUS:
+                    builder->create_fadd(lLoad, rLoad);
+                    break;
+                case OP_MINUS:
+                    builder->create_fsub(lLoad, rLoad);
+                    break;
+                default:
+                    // err
+                    std::abort();
+            }
+        } else {
+            switch (node.op) {
+                case OP_PLUS:
+                    builder->create_fadd(lLoad, rLoad);
+                    break;
+                case OP_MINUS:
+                    builder->create_fsub(lLoad, rLoad);
+                    break;
+                default:
+                    // err
+                    std::abort();
+            }
         }
-    } else {
-        node.term->accept(*this);
-    }
-    
-}
     }
 }
 
 void CminusfBuilder::visit(ASTTerm &node) {
+    node.factor->accept(*this);
     if (node.term != nullptr) {
+        auto r = global_v;
         node.term->accept(*this);
         auto l = global_v;
-        node.factor->accept(*this);
-        auto r = global_v;
-        if (l->get_type()->is_float_type() or r->get_type()->is_float_type()) {
+        if (l->get_type()->is_float_type() and r->get_type()->is_float_type()) {
+            switch (node.op) {
+                case OP_MUL:
+                    global_v = builder->create_fmul(l, r);
+                    break;
+                case OP_DIV:
+                    global_v = builder->create_fdiv(l, r);
+                    break;
+                default:
+                    // err
+                    std::abort();
+            }
+        } else if (l->get_type()->is_integer_type() and r->get_type()->is_float_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            l = builder->create_sitofp(l, float_t);
             switch (node.op) {
                 case OP_MUL:
                     builder->create_fmul(l, r);
                     break;
                 case OP_DIV:
-                    builder->create_fadd(l, r);
+                    builder->create_fdiv(l, r);
                     break;
                 default:
                     // err
                     std::abort();
             }
-        } else if (l->get_type()->is_integer_type() and r->get_type()->is_integer_type()) {
+        } else if (r->get_type()->is_integer_type() and l->get_type()->is_float_type()) {
+            auto float_t = Type::get_float_type(module.get());
+            r = builder->create_sitofp(r, float_t);
+            switch (node.op) {
+                case OP_MUL:
+                    builder->create_fmul(l, r);
+                    break;
+                case OP_DIV:
+                    builder->create_fdiv(l, r);
+                    break;
+                default:
+                    // err
+                    std::abort();
+            }
+        } else {
             switch (node.op) {
                 case OP_MUL:
                     builder->create_imul(l, r);
                     break;
                 case OP_DIV:
-                    builder->create_iadd(l, r);
+                    builder->create_isdiv(l, r);
                     break;
                 default:
                     // err
