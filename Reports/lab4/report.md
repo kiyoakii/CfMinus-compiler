@@ -151,9 +151,9 @@ else:
 
 ```
 visit var
-v = global_v
+v = scope.find(var) // v need to be a pointer, not loaded value
 visit expression
-create_store(v, global_v)
+global_v = create_store(v, global_v)
 ```
 
 ### SimpleExpression
@@ -203,7 +203,6 @@ if term not nullptr:
 包含：id, expression
 
 ```
-global_v = create_load(scope.find(id))
 if expression not nullptr:
 		create TrueBB, FalseBB
     visit expression
@@ -216,6 +215,10 @@ if expression not nullptr:
     builder->insert_bb(TrueBB)
     gep = create_gep(scope.find(id), {ZERO, index})
     global_v = create_load(gep)
+    global_p = gep
+else:
+    global_v = create_load(scope.find(id))
+    global_p = scope.find(id)
 ```
 
 
