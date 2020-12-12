@@ -22,8 +22,6 @@ size_t name_count;
  * scope.find: find and return the value bound to the name
  */
 
-// TODO: add INT1 support
-
 void CminusfBuilder::visit(ASTProgram &node) {
     for (auto &decl : node.declarations) {
         decl->accept(*this);
@@ -263,7 +261,7 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     auto p = global_p;
     // Note that p must be pointer, not loaded value
     node.expression->accept(*this);
-    builder->create_store(p, global_v);
+    builder->create_store(global_v, p);
 }
 
 void CminusfBuilder::visit(ASTSimpleExpression &node) {
