@@ -466,8 +466,6 @@ void CminusfBuilder::visit(ASTTerm &node) {
                     std::abort();
             }
         }
-    } else {
-        node.factor->accept(*this);
     }
 }
 
