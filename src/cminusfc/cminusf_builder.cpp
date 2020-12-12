@@ -383,27 +383,6 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
     }
     
 }
-
-void CminusfBuilder::visit(ASTVar &node) {
-    if (node.expression != nullptr) {
-        auto parent_func = builder->get_insert_block()->get_parent();
-        auto TrueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
-        auto FalseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
-
-        node.expression->accept(*this);
-        auto index = global_v;
-        auto int_t = Type::get_int32_type(module.get());
-        auto cmp = builder->create_icmp_lt(index, CONST_ZERO(int_t));
-        builder->create_br(cmp, TrueBB, FalseBB);
-        builder->set_insert_point(FalseBB);
-        builder->create_call(scope.find("neg_idx_error"), {});
-
-        builder->set_insert_point(TrueBB);
-        global_p = builder->create_gep(scope.find(node.id), {CONST_ZERO(int_t), index});
-        global_v = builder->create_load(global_p);
-    } else {
-        global_p = scope.find(node.id);
-        global_v = builder->create_load(global_p);
     }
 }
 
@@ -443,6 +422,29 @@ void CminusfBuilder::visit(ASTTerm &node) {
     }
 }
 
+void CminusfBuilder::visit(ASTVar &node) {
+    if (node.expression != nullptr) {
+        auto parent_func = builder->get_insert_block()->get_parent();
+        auto TrueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
+        auto FalseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
+
+        node.expression->accept(*this);
+        auto index = global_v;
+        auto int_t = Type::get_int32_type(module.get());
+        auto cmp = builder->create_icmp_lt(index, CONST_ZERO(int_t));
+        builder->create_cond_br(cmp, TrueBB, FalseBB);
+        builder->set_insert_point(FalseBB);
+        builder->create_call(scope.find("neg_idx_error"), {});
+
+        builder->set_insert_point(TrueBB);
+        global_p = builder->create_gep(scope.find(node.id), {CONST_ZERO(int_t), index});
+        global_v = builder->create_load(global_p);
+    } else {
+        global_p = scope.find(node.id);
+        global_v = builder->create_load(global_p);
+    }
+}
+
 void CminusfBuilder::visit(ASTCall &node) {
     auto f = scope.find(node.id);
     std::vector<Value*> args;
@@ -450,5 +452,6 @@ void CminusfBuilder::visit(ASTCall &node) {
         a->accept(*this);
         args.push_back(global_v);
     }
+
     builder->create_call(f, args);
 }
