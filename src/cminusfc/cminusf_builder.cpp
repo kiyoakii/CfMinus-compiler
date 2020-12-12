@@ -250,7 +250,7 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
             std::cout << "Not right! Current function should not return void type" << std::endl;
             std::abort();
         } else {
-            builder->create_ret(nullptr);
+            builder->create_void_ret();
         }
     } else {
         node.expression->accept(*this);
