@@ -176,9 +176,9 @@ if additive_expression_r not nullptr:
 ```
 visit term
 if additive_expression not nullptr:
-		r = load global_v
+		r = global_v
     visit additive_expression
-    l = load global_v
+    l = global_v
     global_v = create_op(l， r)
 ```
 
