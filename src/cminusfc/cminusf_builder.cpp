@@ -96,15 +96,30 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
         func_t = FunctionType::get(Type::get_void_type(module.get()), param_t);
     }
     auto func = Function::create(func_t, node.id, module.get());
+    scope.push(node.id, func);
     auto entryBB = BasicBlock::create(module.get(), "entry", func);
     builder->set_insert_point(entryBB);
 
-    scope.push(node.id, func);
     scope.enter();
-    for (auto &p : node.params) {
-        p->accept(*this);
+    auto p = node.params.begin();
+    for (auto arg = func->arg_begin(); arg != func->arg_end(); arg++) {
+        (*(p++))->accept(*this);
+        builder->create_store(*arg, global_p);
     }
     node.compound_stmt->accept(*this);
+    if (builder->get_insert_block()->get_num_of_instr() == 0) {
+//        if (node.type == TYPE_VOID) {
+//            builder->create_void_ret();
+//        } else if (node.type == TYPE_INT){
+//            builder->create_ret(CONST_INT(0));
+//        } else if (node.type == TYPE_FLOAT) {
+//            builder->create_ret(CONST_FP(0));
+//        } else {
+//            std::abort();
+//        }
+        builder->get_insert_block()->erase_from_parent();
+    }
+
     scope.exit();
 }
 
