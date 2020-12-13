@@ -78,12 +78,8 @@ void CminusfBuilder::visit(ASTProgram &node) {
 }
 
 void CminusfBuilder::visit(ASTFunDeclaration &node) {
-    scope.enter();
-    std::vector<Value*> param_l;
     std::vector<Type*> param_t;
     for (auto &p : node.params) {
-        p->accept(*this);
-        param_l.push_back(global_v);
         if (p->type == TYPE_INT) {
             param_t.push_back(Type::get_int32_type(module.get()));
         } else if (p->type == TYPE_FLOAT) {
@@ -102,11 +98,14 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     auto func = Function::create(func_t, node.id, module.get());
     auto entryBB = BasicBlock::create(module.get(), "entry", func);
     builder->set_insert_point(entryBB);
-    
-    node.compound_stmt->accept(*this);
-    
-    scope.exit();
+
     scope.push(node.id, func);
+    scope.enter();
+    for (auto &p : node.params) {
+        p->accept(*this);
+    }
+    node.compound_stmt->accept(*this);
+    scope.exit();
 }
 
 void CminusfBuilder::visit(ASTVarDeclaration &node) {
@@ -185,6 +184,7 @@ void CminusfBuilder::visit(ASTCompoundStmt &node) {
     for (auto &s : node.statement_list) {
         s->accept(*this);
     }
+    scope.exit();
 }
 
 void CminusfBuilder::visit(ASTNum &node) {
