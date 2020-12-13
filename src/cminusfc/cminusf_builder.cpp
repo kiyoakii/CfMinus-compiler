@@ -12,6 +12,7 @@
 
 Value* global_v;
 Value* global_p;
+bool need_load = true;
 size_t name_count;
 
 /*
@@ -259,8 +260,12 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
 void CminusfBuilder::visit(ASTAssignExpression &node) {
     node.var->accept(*this);
     auto p = global_p;
+    auto v = global_v;
     // Note that p must be pointer, not loaded value
     node.expression->accept(*this);
+    if (v->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
+        global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
+    }
     builder->create_store(global_v, p);
 }
 
@@ -273,17 +278,17 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
 
         if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_integer_type()) {
             if (node.op == OP_LT) {
-                builder->create_icmp_lt(lLoad, rLoad);
+                global_v = builder->create_icmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
-                builder->create_icmp_le(lLoad, rLoad);
+                global_v = builder->create_icmp_le(lLoad, rLoad);
             } else if (node.op == OP_GE) {
-                builder->create_icmp_ge(lLoad, rLoad);
+                global_v = builder->create_icmp_ge(lLoad, rLoad);
             } else if (node.op == OP_GT) {
-                builder->create_icmp_gt(lLoad, rLoad);
+                global_v = builder->create_icmp_gt(lLoad, rLoad);
             } else if (node.op == OP_EQ) {
-                builder->create_icmp_eq(lLoad, rLoad);
+                global_v = builder->create_icmp_eq(lLoad, rLoad);
             } else if (node.op == OP_NEQ) {
-                builder->create_icmp_ne(lLoad, rLoad);
+                global_v = builder->create_icmp_ne(lLoad, rLoad);
             } else {
                 std::abort();
             }
@@ -291,17 +296,17 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             auto float_t = Type::get_float_type(module.get());
             rLoad = builder->create_sitofp(rLoad, float_t);
             if (node.op == OP_LT) {
-                builder->create_fcmp_lt(lLoad, rLoad);
+                global_v = builder->create_fcmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
-                builder->create_fcmp_le(lLoad, rLoad);
+                global_v = builder->create_fcmp_le(lLoad, rLoad);
             } else if (node.op == OP_GE) {
-                builder->create_fcmp_ge(lLoad, rLoad);
+                global_v = builder->create_fcmp_ge(lLoad, rLoad);
             } else if (node.op == OP_GT) {
-                builder->create_fcmp_gt(lLoad, rLoad);
+                global_v = builder->create_fcmp_gt(lLoad, rLoad);
             } else if (node.op == OP_EQ) {
-                builder->create_fcmp_eq(lLoad, rLoad);
+                global_v = builder->create_fcmp_eq(lLoad, rLoad);
             } else if (node.op == OP_NEQ) {
-                builder->create_fcmp_ne(lLoad, rLoad);
+                global_v = builder->create_fcmp_ne(lLoad, rLoad);
             } else {
                 std::abort();
             }
@@ -309,33 +314,33 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
             auto float_t = Type::get_float_type(module.get());
             lLoad = builder->create_sitofp(lLoad, float_t);
             if (node.op == OP_LT) {
-                builder->create_fcmp_lt(lLoad, rLoad);
+                global_v = builder->create_fcmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
-                builder->create_fcmp_le(lLoad, rLoad);
+                global_v = builder->create_fcmp_le(lLoad, rLoad);
             } else if (node.op == OP_GE) {
-                builder->create_fcmp_ge(lLoad, rLoad);
+                global_v = builder->create_fcmp_ge(lLoad, rLoad);
             } else if (node.op == OP_GT) {
-                builder->create_fcmp_gt(lLoad, rLoad);
+                global_v = builder->create_fcmp_gt(lLoad, rLoad);
             } else if (node.op == OP_EQ) {
-                builder->create_fcmp_eq(lLoad, rLoad);
+                global_v = builder->create_fcmp_eq(lLoad, rLoad);
             } else if (node.op == OP_NEQ) {
-                builder->create_fcmp_ne(lLoad, rLoad);
+                global_v = builder->create_fcmp_ne(lLoad, rLoad);
             } else {
                 std::abort();
             }
         } else {
             if (node.op == OP_LT) {
-                builder->create_fcmp_lt(lLoad, rLoad);
+                global_v = builder->create_fcmp_lt(lLoad, rLoad);
             } else if (node.op == OP_LE) {
-                builder->create_fcmp_le(lLoad, rLoad);
+                global_v = builder->create_fcmp_le(lLoad, rLoad);
             } else if (node.op == OP_GE) {
-                builder->create_fcmp_ge(lLoad, rLoad);
+                global_v = builder->create_fcmp_ge(lLoad, rLoad);
             } else if (node.op == OP_GT) {
-                builder->create_fcmp_gt(lLoad, rLoad);
+                global_v = builder->create_fcmp_gt(lLoad, rLoad);
             } else if (node.op == OP_EQ) {
-                builder->create_fcmp_eq(lLoad, rLoad);
+                global_v = builder->create_fcmp_eq(lLoad, rLoad);
             } else if (node.op == OP_NEQ) {
-                builder->create_fcmp_ne(lLoad, rLoad);
+                global_v = builder->create_fcmp_ne(lLoad, rLoad);
             } else {
                 std::abort();
             }
@@ -366,10 +371,10 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
             lLoad = builder->create_sitofp(lLoad, float_t);
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_fadd(lLoad, rLoad);
+                    global_v = builder->create_fadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_fsub(lLoad, rLoad);
+                    global_v = builder->create_fsub(lLoad, rLoad);
                     break;
                 default:
                     // err
@@ -380,10 +385,10 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
             rLoad = builder->create_sitofp(rLoad, float_t);
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_fadd(lLoad, rLoad);
+                    global_v = builder->create_fadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_fsub(lLoad, rLoad);
+                    global_v = builder->create_fsub(lLoad, rLoad);
                     break;
                 default:
                     // err
@@ -392,10 +397,10 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         } else {
             switch (node.op) {
                 case OP_PLUS:
-                    builder->create_fadd(lLoad, rLoad);
+                    global_v = builder->create_fadd(lLoad, rLoad);
                     break;
                 case OP_MINUS:
-                    builder->create_fsub(lLoad, rLoad);
+                    global_v = builder->create_fsub(lLoad, rLoad);
                     break;
                 default:
                     // err
@@ -428,10 +433,10 @@ void CminusfBuilder::visit(ASTTerm &node) {
             l = builder->create_sitofp(l, float_t);
             switch (node.op) {
                 case OP_MUL:
-                    builder->create_fmul(l, r);
+                    global_v = builder->create_fmul(l, r);
                     break;
                 case OP_DIV:
-                    builder->create_fdiv(l, r);
+                    global_v = builder->create_fdiv(l, r);
                     break;
                 default:
                     // err
@@ -442,10 +447,10 @@ void CminusfBuilder::visit(ASTTerm &node) {
             r = builder->create_sitofp(r, float_t);
             switch (node.op) {
                 case OP_MUL:
-                    builder->create_fmul(l, r);
+                    global_v = builder->create_fmul(l, r);
                     break;
                 case OP_DIV:
-                    builder->create_fdiv(l, r);
+                    global_v = builder->create_fdiv(l, r);
                     break;
                 default:
                     // err
@@ -454,10 +459,10 @@ void CminusfBuilder::visit(ASTTerm &node) {
         } else {
             switch (node.op) {
                 case OP_MUL:
-                    builder->create_imul(l, r);
+                    global_v = builder->create_imul(l, r);
                     break;
                 case OP_DIV:
-                    builder->create_isdiv(l, r);
+                    global_v = builder->create_isdiv(l, r);
                     break;
                 default:
                     // err
@@ -483,10 +488,14 @@ void CminusfBuilder::visit(ASTVar &node) {
 
         builder->set_insert_point(TrueBB);
         global_p = builder->create_gep(scope.find(node.id), {CONST_ZERO(int_t), index});
-        global_v = builder->create_load(global_p);
+        if (need_load) {
+            global_v = builder->create_load(global_p);
+        }
     } else {
         global_p = scope.find(node.id);
-        global_v = builder->create_load(global_p);
+        if (need_load) {
+            global_v = builder->create_load(global_p);
+        }
     }
 }
 
@@ -498,5 +507,5 @@ void CminusfBuilder::visit(ASTCall &node) {
         args.push_back(global_v);
     }
 
-    builder->create_call(f, args);
+    global_v = builder->create_call(f, args);
 }
