@@ -223,6 +223,15 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
     node.expression->accept(*this);
     auto cmp = global_v;
+    if (cmp->get_type()->is_float_type()) {
+        cmp = builder->create_fcmp_ne(cmp, CONST_FP(0));
+    } else if (cmp->get_type()->is_integer_type()) {
+        auto *type = static_cast<IntegerType*>(cmp->get_type());
+        if (type->get_num_bits() == 32) {
+            cmp = builder->create_icmp_ne(cmp, CONST_INT(0));
+        }
+    }
+
     builder->create_cond_br(cmp, trueBB, falseBB);
 
     builder->set_insert_point(trueBB);
@@ -230,6 +239,7 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
     if (node.else_statement != nullptr) {
         auto retBB = BasicBlock::create(module.get(), "ReturnBB" + std::to_string(name_count++), parent_func);
+        builder->create_br(retBB);
         builder->set_insert_point(falseBB);
         node.else_statement->accept(*this);
         if (falseBB->get_terminator() == nullptr) {
@@ -247,14 +257,23 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
 void CminusfBuilder::visit(ASTIterationStmt &node) {
     auto parent_func = builder->get_insert_block()->get_parent();
-    auto iterBB = BasicBlock::create(module.get(), "IterationBB" + std::to_string(name_count++), parent_func);
     auto conBB = BasicBlock::create(module.get(), "ConditionBB" + std::to_string(name_count++), parent_func);
+    auto iterBB = BasicBlock::create(module.get(), "IterationBB" + std::to_string(name_count++), parent_func);
     auto retBB = BasicBlock::create(module.get(), "ReturnBB" + std::to_string(name_count++), parent_func);
 
     builder->create_br(conBB);
     builder->set_insert_point(conBB);
     node.expression->accept(*this);
     auto cmp = global_v;
+    if (cmp->get_type()->is_float_type()) {
+        cmp = builder->create_fcmp_ne(cmp, CONST_FP(0));
+    } else if (cmp->get_type()->is_integer_type()) {
+        auto *type = static_cast<IntegerType*>(cmp->get_type());
+        if (type->get_num_bits() == 32) {
+            cmp = builder->create_icmp_ne(cmp, CONST_INT(0));
+        }
+    }
+
     builder->create_cond_br(cmp, iterBB, retBB);
 
     builder->set_insert_point(iterBB);
@@ -264,7 +283,6 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
     }
 
     builder->set_insert_point(retBB);
-
 }
 
 void CminusfBuilder::visit(ASTReturnStmt &node) {
@@ -279,6 +297,12 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         }
     } else {
         node.expression->accept(*this);
+        if (global_v->get_type()->is_integer_type()) {
+            auto *type = static_cast<IntegerType*>(global_v->get_type());
+            if (type->get_num_bits() == 1) {
+                global_v = builder->create_zext(global_v, Type::get_int32_type(module.get()));
+            }
+        }
         if (current_f->get_return_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
             global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
         }
@@ -292,6 +316,12 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     auto v = global_v;
     // Note that p must be pointer, not loaded value
     node.expression->accept(*this);
+    if (global_v->get_type()->is_integer_type()) {
+        auto *type = static_cast<IntegerType*>(global_v->get_type());
+        if (type->get_num_bits() == 1) {
+            global_v = builder->create_zext(global_v, Type::get_int32_type(module.get()));
+        }
+    }
     if (v->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
         global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
     } else if (v->get_type()->is_float_type() and global_v->get_type()->is_integer_type()) {
@@ -385,6 +415,18 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         auto rLoad = global_v;
         node.additive_expression->accept(*this);
         auto lLoad = global_v;
+        if (lLoad->get_type()->is_integer_type()) {
+            auto lType = static_cast<IntegerType*>(lLoad->get_type());
+            if (lType->get_num_bits() == 1) {
+                lLoad = builder->create_zext(lLoad, Type::get_int32_type(module.get()));
+            }
+        }
+        if (rLoad->get_type()->is_integer_type()) {
+            auto rType = static_cast<IntegerType*>(rLoad->get_type());
+            if (rType->get_num_bits() == 1) {
+                rLoad = builder->create_zext(rLoad, Type::get_int32_type(module.get()));
+            }
+        }
         if (lLoad->get_type()->is_integer_type() and rLoad->get_type()->is_integer_type()) {
             switch (node.op) {
                 case OP_PLUS:
@@ -514,13 +556,14 @@ void CminusfBuilder::visit(ASTVar &node) {
         if (index->get_type()->is_float_type()) {
             index = builder->create_fptosi(index, Type::get_int32_type(module.get()));
         }
+
         auto cmp = builder->create_icmp_lt(index, CONST_INT(0));
         builder->create_cond_br(cmp, TrueBB, FalseBB);
         builder->set_insert_point(TrueBB);
         builder->create_call(scope.find("neg_idx_except"), {});
         builder->create_br(FalseBB);
-
         builder->set_insert_point(FalseBB);
+
         global_p = builder->create_gep(scope.find(node.id), {CONST_INT(0), index});
         if (need_load) {
             global_v = builder->create_load(global_p);
@@ -539,6 +582,12 @@ void CminusfBuilder::visit(ASTCall &node) {
     auto param = f->arg_begin();
     for (auto &a : node.args) {
         a->accept(*this);
+        if (global_v->get_type()->is_integer_type()) {
+            auto type = static_cast<IntegerType*>(global_v->get_type());
+            if (type->get_num_bits() == 1) {
+                global_v = builder->create_zext(global_v, Type::get_int32_type(module.get()));
+            }
+        }
         if ((*param)->get_type()->is_float_type() and global_v->get_type()->is_integer_type()) {
             global_v = builder->create_sitofp(global_v, Type::get_float_type(module.get()));
         } else if ((*param)->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
