@@ -12,6 +12,7 @@
 Value* global_v;
 Value* global_p;
 bool need_load = true;
+size_t name_count;
 
 /*
  * use CMinusfBuilder::Scope to construct scopes
@@ -217,8 +218,8 @@ void CminusfBuilder::visit(ASTExpressionStmt &node) {
 
 void CminusfBuilder::visit(ASTSelectionStmt &node) {
     auto parent_func = builder->get_insert_block()->get_parent();
-    auto trueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
-    auto falseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
+    auto trueBB = BasicBlock::create(module.get(), "TrueBB" + std::to_string(name_count++), parent_func);
+    auto falseBB = BasicBlock::create(module.get(), "FalseBB" + std::to_string(name_count++), parent_func);
 
     node.expression->accept(*this);
     auto cmp = global_v;
@@ -228,7 +229,7 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     node.if_statement->accept(*this);
 
     if (node.else_statement != nullptr) {
-        auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
+        auto retBB = BasicBlock::create(module.get(), "ReturnBB" + std::to_string(name_count++), parent_func);
         builder->set_insert_point(falseBB);
         node.else_statement->accept(*this);
         if (falseBB->get_terminator() == nullptr) {
@@ -246,10 +247,11 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
 void CminusfBuilder::visit(ASTIterationStmt &node) {
     auto parent_func = builder->get_insert_block()->get_parent();
-    auto iterBB = BasicBlock::create(module.get(), "IterationBB", parent_func);
-    auto conBB = BasicBlock::create(module.get(), "ConditionBB", parent_func);
-    auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
+    auto iterBB = BasicBlock::create(module.get(), "IterationBB" + std::to_string(name_count++), parent_func);
+    auto conBB = BasicBlock::create(module.get(), "ConditionBB" + std::to_string(name_count++), parent_func);
+    auto retBB = BasicBlock::create(module.get(), "ReturnBB" + std::to_string(name_count++), parent_func);
 
+    builder->create_br(conBB);
     builder->set_insert_point(conBB);
     node.expression->accept(*this);
     auto cmp = global_v;
@@ -257,15 +259,18 @@ void CminusfBuilder::visit(ASTIterationStmt &node) {
 
     builder->set_insert_point(iterBB);
     node.statement->accept(*this);
-    builder->create_br(conBB);
+    if (builder->get_insert_block()->get_terminator() == nullptr) {
+        builder->create_br(conBB);
+    }
 
     builder->set_insert_point(retBB);
+
 }
 
 void CminusfBuilder::visit(ASTReturnStmt &node) {
+    auto current_f = builder->get_insert_block()->get_parent();
     if (node.expression == nullptr) {
         // check whether the function is really void type
-        auto current_f = builder->get_insert_block()->get_parent();
         if (!current_f->get_return_type()->is_void_type()) {
             std::cout << "Not right! Current function should not return void type" << std::endl;
             std::abort();
@@ -496,17 +501,18 @@ void CminusfBuilder::visit(ASTTerm &node) {
 void CminusfBuilder::visit(ASTVar &node) {
     if (node.expression != nullptr) {
         auto parent_func = builder->get_insert_block()->get_parent();
-        auto TrueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
-        auto FalseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
+        auto TrueBB = BasicBlock::create(module.get(), "NegativeIDXBB" + std::to_string(name_count++), parent_func);
+        auto FalseBB = BasicBlock::create(module.get(), "RightIDXBB" + std::to_string(name_count++), parent_func);
 
         node.expression->accept(*this);
         auto index = global_v;
         auto cmp = builder->create_icmp_lt(index, CONST_INT(0));
         builder->create_cond_br(cmp, TrueBB, FalseBB);
-        builder->set_insert_point(FalseBB);
-        builder->create_call(scope.find("neg_idx_error"), {});
-
         builder->set_insert_point(TrueBB);
+        builder->create_call(scope.find("neg_idx_except"), {});
+        builder->create_br(FalseBB);
+
+        builder->set_insert_point(FalseBB);
         global_p = builder->create_gep(scope.find(node.id), {CONST_INT(0), index});
         if (need_load) {
             global_v = builder->create_load(global_p);
