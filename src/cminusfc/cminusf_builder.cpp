@@ -219,7 +219,6 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     auto parent_func = builder->get_insert_block()->get_parent();
     auto trueBB = BasicBlock::create(module.get(), "TrueBB", parent_func);
     auto falseBB = BasicBlock::create(module.get(), "FalseBB", parent_func);
-    auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
 
     node.expression->accept(*this);
     auto cmp = global_v;
@@ -229,11 +228,20 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
     node.if_statement->accept(*this);
 
     if (node.else_statement != nullptr) {
+        auto retBB = BasicBlock::create(module.get(), "ReturnBB", parent_func);
         builder->set_insert_point(falseBB);
         node.else_statement->accept(*this);
+        if (falseBB->get_terminator() == nullptr) {
+            builder->create_br(retBB);
+        }
+        builder->set_insert_point(retBB);
+    } else {
+        if (trueBB->get_terminator() == nullptr) {
+            builder->create_br(falseBB);
+        }
+        builder->set_insert_point(falseBB);
     }
 
-    builder->set_insert_point(retBB);
 }
 
 void CminusfBuilder::visit(ASTIterationStmt &node) {
