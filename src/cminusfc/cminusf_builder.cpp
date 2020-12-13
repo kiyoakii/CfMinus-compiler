@@ -501,14 +501,13 @@ void CminusfBuilder::visit(ASTVar &node) {
 
         node.expression->accept(*this);
         auto index = global_v;
-        auto int_t = Type::get_int32_type(module.get());
-        auto cmp = builder->create_icmp_lt(index, CONST_ZERO(int_t));
+        auto cmp = builder->create_icmp_lt(index, CONST_INT(0));
         builder->create_cond_br(cmp, TrueBB, FalseBB);
         builder->set_insert_point(FalseBB);
         builder->create_call(scope.find("neg_idx_error"), {});
 
         builder->set_insert_point(TrueBB);
-        global_p = builder->create_gep(scope.find(node.id), {CONST_ZERO(int_t), index});
+        global_p = builder->create_gep(scope.find(node.id), {CONST_INT(0), index});
         if (need_load) {
             global_v = builder->create_load(global_p);
         }
