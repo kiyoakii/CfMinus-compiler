@@ -172,22 +172,22 @@ void CminusfBuilder::visit(ASTParam &node) {
     if (node.isarray) {
         if (node.type == TYPE_INT) {
             auto arr_t = Type::get_int32_ptr_type(module.get());
-            global_v = builder->create_alloca(arr_t);
+            global_p = builder->create_alloca(arr_t);
         } else if (node.type == TYPE_FLOAT) {
             auto arr_t = Type::get_float_ptr_type(module.get());
-            global_v = builder->create_alloca(arr_t);
+            global_p = builder->create_alloca(arr_t);
         }
     } else {
         if (node.type == TYPE_INT) {
             auto int_t = Type::get_int32_type(module.get());
-            global_v = builder->create_alloca(int_t);
+            global_p = builder->create_alloca(int_t);
         } else if (node.type == TYPE_FLOAT) {
             auto float_t = Type::get_float_type(module.get());
-            global_v = builder->create_alloca(float_t);
+            global_p = builder->create_alloca(float_t);
         }
     }
 
-    scope.push(node.id, global_v);
+    scope.push(node.id, global_p);
 }
 
 void CminusfBuilder::visit(ASTCompoundStmt &node) {
