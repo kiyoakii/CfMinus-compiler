@@ -511,6 +511,9 @@ void CminusfBuilder::visit(ASTVar &node) {
 
         node.expression->accept(*this);
         auto index = global_v;
+        if (index->get_type()->is_float_type()) {
+            index = builder->create_fptosi(index, Type::get_int32_type(module.get()));
+        }
         auto cmp = builder->create_icmp_lt(index, CONST_INT(0));
         builder->create_cond_br(cmp, TrueBB, FalseBB);
         builder->set_insert_point(TrueBB);
@@ -531,10 +534,17 @@ void CminusfBuilder::visit(ASTVar &node) {
 }
 
 void CminusfBuilder::visit(ASTCall &node) {
-    auto f = scope.find(node.id);
+    auto f = dynamic_cast<Function*>(scope.find(node.id));
     std::vector<Value*> args;
+    auto param = f->arg_begin();
     for (auto &a : node.args) {
         a->accept(*this);
+        if ((*param)->get_type()->is_float_type() and global_v->get_type()->is_integer_type()) {
+            global_v = builder->create_sitofp(global_v, Type::get_float_type(module.get()));
+        } else if ((*param)->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
+            global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
+        }
+        param++;
         args.push_back(global_v);
     }
 
