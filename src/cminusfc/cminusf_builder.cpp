@@ -12,7 +12,6 @@
 Value* global_v;
 Value* global_p;
 bool need_load = true;
-size_t name_count;
 
 /*
  * use CMinusfBuilder::Scope to construct scopes
@@ -131,7 +130,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto array_t = ArrayType::get_array_type(int_t, node.num->i_val);
             if (scope.in_global()){
                 auto initializer = ConstantZero::get(array_t, module.get());
-                global_v = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
+                global_v = GlobalVariable::create(node.id, module.get(), array_t, false, initializer);
             } else {
                 global_v = builder->create_alloca(array_t);
             }
@@ -140,7 +139,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto array_t = ArrayType::get_array_type(float_t, node.num->i_val);
             if (scope.in_global()) {
                 auto initializer = ConstantZero::get(array_t, module.get());
-                global_v = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), array_t, false, initializer);
+                global_v = GlobalVariable::create(node.id, module.get(), array_t, false, initializer);
             } else {
                 global_v = builder->create_alloca(array_t);
             }
@@ -151,7 +150,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto int_t = Type::get_int32_type(module.get());
             if (scope.in_global()) {
                 auto initializer = ConstantZero::get(int_t, module.get());
-                global_v = GlobalVariable::create("global" + std::to_string(name_count++), module.get(), int_t, false, initializer);
+                global_v = GlobalVariable::create(node.id, module.get(), int_t, false, initializer);
             } else {
                 global_v = builder->create_alloca(int_t);
             }
@@ -159,7 +158,7 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto float_t = Type::get_float_type(module.get());
             if (builder->get_insert_block() == nullptr) {
                 auto initializer = ConstantZero::get(float_t, module.get());
-                global_v = GlobalVariable::create("global" + std::to_string(name_count++), module.get(), float_t, false, initializer);
+                global_v = GlobalVariable::create(node.id, module.get(), float_t, false, initializer);
             } else {
                 global_v = builder->create_alloca(float_t);
             }
