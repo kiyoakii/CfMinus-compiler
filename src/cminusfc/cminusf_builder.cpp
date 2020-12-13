@@ -11,7 +11,6 @@
 // to store state
 Value* global_v;
 Value* global_p;
-bool need_load = true;
 size_t name_count;
 
 /*
@@ -26,7 +25,7 @@ void CminusfBuilder::visit(ASTProgram &node) {
     for (auto &decl : node.declarations) {
         decl->accept(*this);
     }
-    // 下面的代码是错误尝试，报告中详细解释。
+    // 下面的代码是错误尝试，设计 visitor pattern 的编程范式，我们想后续开一个 issue 详细解释。
     // for (auto &decl : node.declarations) {
     //     auto var_decl = dynamic_cast<ASTVarDeclaration*>(&node);
     //     if (var_decl) {
@@ -234,6 +233,9 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
     builder->create_cond_br(cmp, trueBB, falseBB);
 
+    if(builder->get_insert_block()->get_terminator() == nullptr) {
+        builder->create_br(trueBB);
+    }
     builder->set_insert_point(trueBB);
     node.if_statement->accept(*this);
 
@@ -565,14 +567,10 @@ void CminusfBuilder::visit(ASTVar &node) {
         builder->set_insert_point(FalseBB);
 
         global_p = builder->create_gep(scope.find(node.id), {CONST_INT(0), index});
-        if (need_load) {
-            global_v = builder->create_load(global_p);
-        }
+        global_v = builder->create_load(global_p);
     } else {
         global_p = scope.find(node.id);
-        if (need_load) {
-            global_v = builder->create_load(global_p);
-        }
+        global_v = builder->create_load(global_p);
     }
 }
 
