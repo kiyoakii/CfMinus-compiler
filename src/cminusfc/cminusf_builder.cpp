@@ -108,16 +108,16 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
     }
     node.compound_stmt->accept(*this);
     if (builder->get_insert_block()->get_num_of_instr() == 0) {
-//        if (node.type == TYPE_VOID) {
-//            builder->create_void_ret();
-//        } else if (node.type == TYPE_INT){
-//            builder->create_ret(CONST_INT(0));
-//        } else if (node.type == TYPE_FLOAT) {
-//            builder->create_ret(CONST_FP(0));
-//        } else {
-//            std::abort();
-//        }
-        builder->get_insert_block()->erase_from_parent();
+        if (node.type == TYPE_VOID) {
+            builder->create_void_ret();
+        } else if (node.type == TYPE_INT){
+            builder->create_ret(CONST_INT(0));
+        } else if (node.type == TYPE_FLOAT) {
+            builder->create_ret(CONST_FP(0));
+        } else {
+            std::abort();
+        }
+//        builder->get_insert_block()->erase_from_parent();
     }
 
     scope.exit();
