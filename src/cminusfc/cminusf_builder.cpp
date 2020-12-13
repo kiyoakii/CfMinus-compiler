@@ -279,6 +279,9 @@ void CminusfBuilder::visit(ASTReturnStmt &node) {
         }
     } else {
         node.expression->accept(*this);
+        if (current_f->get_return_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
+            global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
+        }
         builder->create_ret(global_v);
     }
 }
@@ -291,6 +294,8 @@ void CminusfBuilder::visit(ASTAssignExpression &node) {
     node.expression->accept(*this);
     if (v->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
         global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
+    } else if (v->get_type()->is_float_type() and global_v->get_type()->is_integer_type()) {
+        global_v = builder->create_sitofp(global_v, Type::get_float_type(module.get()));
     }
     builder->create_store(global_v, p);
 }
