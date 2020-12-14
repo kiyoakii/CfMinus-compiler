@@ -25,64 +25,23 @@ void CminusfBuilder::visit(ASTProgram &node) {
     for (auto &decl : node.declarations) {
         decl->accept(*this);
     }
-    // 下面的代码是错误尝试，设计 visitor pattern 的编程范式，我们想后续开一个 issue 详细解释。
-    // for (auto &decl : node.declarations) {
-    //     auto var_decl = dynamic_cast<ASTVarDeclaration*>(&node);
-    //     if (var_decl) {
-    //         // var_decl->accept(*this);
-    //         if (var_decl->num == nullptr) {
-    //             // 声明变量
-    //             Value* var_alloca;
-    //             if (var_decl->type == TYPE_INT) {
-    //                 auto int_t = Type::get_int32_type(module.get());
-    //                 auto initializer = ConstantZero::get(int_t, module.get());
-    //                 var_alloca = GlobalVariable::create("global_v" + std::to_string(name_count++), module.get(), int_t, false, initializer);
-    //                 // var_alloca = builder->create_alloca(int_t);
-    //             } else if (var_decl->type == TYPE_FLOAT) {
-    //                 auto float_t = Type::get_float_type(module.get());
-    //                 auto initializer = ConstantZero::get(float_t, module.get());
-    //                 var_alloca = GlobalVariable::create("global_v" + std::to_string(name_count++), module.get(), float_t, false, initializer);
-    //             }
-    //             scope.push(var_decl->id, var_alloca);
-    //         } else {
-    //             // 声明数组
-    //             Value* arr_alloca;
-    //             if (var_decl->type == TYPE_INT) {
-    //                 auto int_t = Type::get_int32_type(module.get());
-    //                 if (var_decl->num->i_val < 0) {
-    //                     builder->create_call(scope.find("neg_idx_except_fun"), {});
-    //                 }
-    //                 auto arr_t = Type::get_array_type(int_t, var_decl->num->i_val);
-    //                 auto initializer = ConstantZero::get(arr_t, module.get());
-    //                 arr_alloca = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), arr_t, false, initializer);
-    //                 // arr_alloca = builder->create_alloca(arr_t);
-    //             } else if (var_decl->type == TYPE_FLOAT) {
-    //                 auto float_t = Type::get_float_type(module.get());
-    //                 auto arr_t = Type::get_array_type(float_t, var_decl->num->i_val);
-    //                 auto initializer = ConstantZero::get(arr_t, module.get());
-    //                 arr_alloca = GlobalVariable::create("global_arr" + std::to_string(name_count++), module.get(), arr_t, false, initializer);
-    //                 // arr_alloca = builder->create_alloca(arr_t);
-    //             }
-    //             scope.push(var_decl->id, arr_alloca);
-    //         }
-    //         continue;
-    //     }
-
-    //     auto fun_decl = dynamic_cast<ASTFunDeclaration*>(&node);
-    //     if (fun_decl) {
-    //         fun_decl->accept(*this);
-    //         continue;
-    //     }
-    // }
 }
 
 void CminusfBuilder::visit(ASTFunDeclaration &node) {
     std::vector<Type*> param_t;
     for (auto &p : node.params) {
         if (p->type == TYPE_INT) {
-            param_t.push_back(Type::get_int32_type(module.get()));
+            if (p->isarray) {
+                param_t.push_back(Type::get_int32_ptr_type(module.get()));
+            } else {
+                param_t.push_back(Type::get_int32_type(module.get()));
+            }
         } else if (p->type == TYPE_FLOAT) {
-            param_t.push_back(Type::get_float_type(module.get()));
+            if (p->isarray) {
+                param_t.push_back(Type::get_float_ptr_type(module.get()));
+            } else {
+                param_t.push_back(Type::get_float_type(module.get()));
+            }
         }
     }
 
