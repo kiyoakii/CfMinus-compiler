@@ -525,7 +525,13 @@ void CminusfBuilder::visit(ASTVar &node) {
         builder->create_br(FalseBB);
         builder->set_insert_point(FalseBB);
 
-        global_p = builder->create_gep(scope.find(node.id), {CONST_INT(0), index});
+        auto alloca = scope.find(node.id);
+        if (alloca->get_type()->get_pointer_element_type()->is_array_type()) {
+            global_p = builder->create_gep(alloca, {CONST_INT(0), index});
+        } else {
+            auto pLoad = builder->create_load(alloca);
+            global_p = builder->create_gep(pLoad, {index});
+        }
         global_v = builder->create_load(global_p);
     } else {
         global_p = scope.find(node.id);
@@ -549,6 +555,8 @@ void CminusfBuilder::visit(ASTCall &node) {
             global_v = builder->create_sitofp(global_v, Type::get_float_type(module.get()));
         } else if ((*param)->get_type()->is_integer_type() and global_v->get_type()->is_float_type()) {
             global_v = builder->create_fptosi(global_v, Type::get_int32_type(module.get()));
+        } else if (global_v->get_type()->is_array_type()) {
+            global_v = builder->create_gep(global_p, {CONST_INT(0), CONST_INT(0)});
         }
         param++;
         args.push_back(global_v);
