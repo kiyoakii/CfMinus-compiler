@@ -44,11 +44,13 @@ def eval():
                     else:
                         print('\t\033[31mFail\033[0m')
             except Exception as _:
+                print('exception')
                 print('\t\033[31mFail\033[0m')
             finally:
                 subprocess.call(["rm", "-rf", TEST_PATH, TEST_PATH + ".o"])
 
         else:
+            print('return code not zero')
             print('\t\033[31mFail\033[0m')
 
     print('============TEST END============')
