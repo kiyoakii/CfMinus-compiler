@@ -518,6 +518,8 @@ void CminusfBuilder::visit(ASTVar &node) {
         auto index = global_v;
         if (index->get_type()->is_float_type()) {
             index = builder->create_fptosi(index, Type::get_int32_type(module.get()));
+        } else if (static_cast<IntegerType*>(index->get_type())->get_num_bits() == 1) {
+            index = builder->create_zext(index, Type::get_int32_type(module.get()));
         }
 
         auto cmp = builder->create_icmp_lt(index, CONST_INT(0));
