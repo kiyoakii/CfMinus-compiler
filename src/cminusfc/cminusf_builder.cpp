@@ -200,7 +200,9 @@ void CminusfBuilder::visit(ASTSelectionStmt &node) {
 
     if (node.else_statement != nullptr) {
         auto retBB = BasicBlock::create(module.get(), "ReturnBB" + std::to_string(name_count++), parent_func);
-        builder->create_br(retBB);
+        if (builder->get_insert_block()->get_terminator() == nullptr) {
+            builder->create_br(retBB);
+        }
         builder->set_insert_point(falseBB);
         node.else_statement->accept(*this);
         if (builder->get_insert_block()->get_terminator() == nullptr) {
