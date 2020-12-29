@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     }
     if( const_propagation )
     {
-        PM.add_pass<ConstPropagation>(true);
+        PM.add_pass<ConstPropagation>();
     }
     if( activevars )
     {
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     }
     if( loop_inv_hoist )
     {
-        PM.add_pass<LoopInvHoist>(true);
+        PM.add_pass<LoopInvHoist>();
     }
     PM.run();
     
