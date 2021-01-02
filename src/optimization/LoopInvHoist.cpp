@@ -5,12 +5,58 @@
 
 bool change;
 
+void LoopInvHoist::retmovfinal(BasicBlock* bb)
+{
+    std::cout<<"move terminal of bb: "<<bb->get_name()<<std::endl;
+    Instruction* instr=nullptr;
+    for (auto i:bb->get_instructions())
+    {
+        if (i->isTerminator())
+            instr=i;
+    }
+    if (instr==nullptr)
+        return;
+    if (instr->is_br())
+    {
+        BranchInst* brinstr=static_cast<BranchInst*>(instr);
+        BranchInst* newbrinstr=nullptr;
+        if (brinstr->is_cond_br())
+        {
+            auto op0=brinstr->get_operand(0);
+            auto op1=brinstr->get_operand(1);
+            auto op2=brinstr->get_operand(2);
+            newbrinstr=brinstr->create_cond_br(op0,static_cast<BasicBlock*>(op1),static_cast<BasicBlock*>(op2),bb);
+        }
+        else
+        {
+            auto op0=brinstr->get_operand(0);
+            newbrinstr=brinstr->create_br(static_cast<BasicBlock*>(op0),bb);
+        }
+        rmlist.push_back(brinstr);
+    }
+    if (instr->is_ret())
+    {
+        ReturnInst* retinstr=static_cast<ReturnInst*>(instr);
+        ReturnInst* newretinstr=nullptr;
+        if (retinstr->is_void_ret())
+        {
+            newretinstr=retinstr->create_void_ret(bb);
+        }
+        else
+        {
+            auto op0=retinstr->get_operand(0);
+            newretinstr=retinstr->create_ret(op0,bb);
+        }
+        rmlist.push_back(retinstr);
+    }
+}
+
 void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
 {
-    BinaryInst* bininstr=nullptr;
-    BinaryInst* newbininstr=nullptr;
     if (instr->isBinary())
     {
+        BinaryInst* bininstr=nullptr;
+        BinaryInst* newbininstr=nullptr;
         std::cout<<"move "<<instr->get_name()<<" to "<<bb->get_name()<<std::endl;
         change=true;
         bininstr=static_cast<BinaryInst*>(instr);
@@ -33,14 +79,11 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
             newbininstr=bininstr->create_sdiv(op0,op1,bb,m_);
         if (bininstr->is_fdiv())  
             newbininstr=bininstr->create_fdiv(op0,op1,bb,m_);
-        std::cout<<"bininstr parent: "<<bininstr->get_parent()->get_name()<<std::endl;
-        std::cout<<"newbininstr parent: "<<newbininstr->get_parent()->get_name()<<std::endl;
         newbininstr->set_name(bininstr->get_name());
-        std::cout<<"before delete"<<std::endl;
         rmlist.push_back(bininstr);
-        std::cout<<"after delete"<<std::endl;
+        std::cout<<"instr push in rmlist"<<std::endl;
+        retmovfinal(bb);
     }
-    
 }
 
 /*void LoopInvHoist::f1(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb,bool print)
@@ -155,7 +198,6 @@ void LoopInvHoist::f4(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb
         std::cout<<"bb: "<<i->get_name()<<std::endl;
         for (auto iinstr:i->get_instructions())
         {
-            std::cout<<"instr: "<<iinstr->get_name()<<std::endl;
             if (rightnoassign[iinstr])
             {
                 moveinstr(iinstr,movedest);
@@ -205,102 +247,9 @@ void LoopInvHoist::run()
             ///f1(bbs,bb);
             //std::cout<<"f2*****"<<std::endl;
             //f2(bbs);
-            std::cout<<"f3*****"<<std::endl;
             f3(bbs,false);
             std::cout<<"f4*****"<<std::endl;
             f4(bbs,bb,true);
         }
-            /*
-            for (auto instr:bb->get_instructions())
-            {
-                if (instr->is_add())
-                {
-                    std::cout<<"add"<<std::endl;
-                }
-                if (instr->is_fadd())
-                {
-                    std::cout<<"fadd"<<std::endl;
-                }
-                if (instr->is_sub())
-                {
-                    std::cout<<"sub"<<std::endl;
-                }
-                if (instr->is_fsub())
-                {
-                    std::cout<<"fsub"<<std::endl;
-                }
-                if (instr->is_mul())
-                {
-                    std::cout<<"mul"<<std::endl;
-                }
-                if (instr->is_fmul())
-                {
-                    std::cout<<"fmul"<<std::endl;
-                }
-                if (instr->is_div())
-                {
-                    std::cout<<"div"<<std::endl;
-                }
-                if (instr->is_fdiv())
-                {
-                    std::cout<<"fdiv"<<std::endl;
-                }
-                if (instr->is_cmp())
-                {
-                    std::cout<<"cmp"<<std::endl;
-                }
-                if (instr->is_fcmp())
-                {
-                    std::cout<<"fcmp"<<std::endl;
-                }
-                if (instr->is_br())
-                {
-                    std::cout<<"br"<<std::endl;
-                }
-                if (instr->is_call())
-                {
-                    std::cout<<"call"<<std::endl;
-                }
-                if (instr->is_ret())
-                {
-                    std::cout<<"ret"<<std::endl;
-                }
-                if (instr->is_phi())
-                {
-                    std::cout<<"phi"<<std::endl;
-                }
-                if (instr->is_fp2si())
-                {
-                    std::cout<<"fp2si"<<std::endl;
-                }
-                if (instr->is_si2fp())
-                {
-                    std::cout<<"si2fp"<<std::endl;
-                }
-                if (instr->is_zext())
-                {
-                    std::cout<<"zext"<<std::endl;
-                }
-                if (instr->is_alloca())
-                {
-                    std::cout<<"alloca"<<std::endl;
-                }
-                if (instr->is_gep())
-                {
-                    std::cout<<"gep"<<std::endl;
-                }
-                if (instr->is_load())
-                {
-                    std::cout<<"load"<<std::endl;
-                }
-                if (instr->is_store())
-                {
-                    std::cout<<"store"<<std::endl;
-                }
-                if (instr->is_void())
-                {
-                    std::cout<<"void"<<std::endl;
-                }
-            }*/
     }
 }
