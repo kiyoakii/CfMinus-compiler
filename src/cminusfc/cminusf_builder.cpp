@@ -86,11 +86,11 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto initializer = ConstantZero::get(var_type, module.get());
             auto var = GlobalVariable::create
                     (
-                    node.id,
-                    module.get(),
-                    var_type,
-                    false,
-                    initializer);
+                            node.id,
+                            module.get(),
+                            var_type,
+                            false,
+                            initializer);
             scope.push(node.id, var);
         } else {
             auto var = builder->create_alloca(var_type);
@@ -102,11 +102,11 @@ void CminusfBuilder::visit(ASTVarDeclaration &node) {
             auto initializer = ConstantZero::get(array_type, module.get());
             auto var = GlobalVariable::create
                     (
-                    node.id,
-                    module.get(),
-                    array_type,
-                    false,
-                    initializer);
+                            node.id,
+                            module.get(),
+                            array_type,
+                            false,
+                            initializer);
             scope.push(node.id, var);
         } else {
             auto var = builder->create_alloca(array_type);
@@ -144,10 +144,10 @@ void CminusfBuilder::visit(ASTFunDeclaration &node) {
 
     fun_type = FunctionType::get(ret_type, param_types);
     auto fun =
-        Function::create(
-                fun_type,
-                node.id,
-                module.get());
+            Function::create(
+                    fun_type,
+                    node.id,
+                    module.get());
     scope.push(node.id, fun);
     cur_fun = fun;
     auto funBB = BasicBlock::create(module.get(), "entry", fun);
@@ -380,42 +380,42 @@ void CminusfBuilder::visit(ASTSimpleExpression &node) {
         bool is_int = promote(builder, &l_val, &r_val);
         Value *cmp;
         switch (node.op) {
-        case OP_LT:
-            if (is_int)
-                cmp = builder->create_icmp_lt(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_lt(l_val, r_val);
-            break;
-        case OP_LE:
-            if (is_int)
-                cmp = builder->create_icmp_le(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_le(l_val, r_val);
-            break;
-        case OP_GE:
-            if (is_int)
-                cmp = builder->create_icmp_ge(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_ge(l_val, r_val);
-            break;
-        case OP_GT:
-            if (is_int)
-                cmp = builder->create_icmp_gt(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_gt(l_val, r_val);
-            break;
-        case OP_EQ:
-            if (is_int)
-                cmp = builder->create_icmp_eq(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_eq(l_val, r_val);
-            break;
-        case OP_NEQ:
-            if (is_int)
-                cmp = builder->create_icmp_ne(l_val, r_val);
-            else
-                cmp = builder->create_fcmp_ne(l_val, r_val);
-            break;
+            case OP_LT:
+                if (is_int)
+                    cmp = builder->create_icmp_lt(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_lt(l_val, r_val);
+                break;
+            case OP_LE:
+                if (is_int)
+                    cmp = builder->create_icmp_le(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_le(l_val, r_val);
+                break;
+            case OP_GE:
+                if (is_int)
+                    cmp = builder->create_icmp_ge(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_ge(l_val, r_val);
+                break;
+            case OP_GT:
+                if (is_int)
+                    cmp = builder->create_icmp_gt(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_gt(l_val, r_val);
+                break;
+            case OP_EQ:
+                if (is_int)
+                    cmp = builder->create_icmp_eq(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_eq(l_val, r_val);
+                break;
+            case OP_NEQ:
+                if (is_int)
+                    cmp = builder->create_icmp_ne(l_val, r_val);
+                else
+                    cmp = builder->create_fcmp_ne(l_val, r_val);
+                break;
         }
 
         tmp_val = builder->create_zext(cmp, INT32_T);
@@ -432,18 +432,18 @@ void CminusfBuilder::visit(ASTAdditiveExpression &node) {
         auto r_val = tmp_val;
         bool is_int = promote(builder, &l_val, &r_val);
         switch (node.op) {
-        case OP_PLUS:
-            if (is_int)
-                tmp_val = builder->create_iadd(l_val, r_val);
-            else
-                tmp_val = builder->create_fadd(l_val, r_val);
-            break;
-        case OP_MINUS:
-            if (is_int)
-                tmp_val = builder->create_isub(l_val, r_val);
-            else
-                tmp_val = builder->create_fsub(l_val, r_val);
-            break;
+            case OP_PLUS:
+                if (is_int)
+                    tmp_val = builder->create_iadd(l_val, r_val);
+                else
+                    tmp_val = builder->create_fadd(l_val, r_val);
+                break;
+            case OP_MINUS:
+                if (is_int)
+                    tmp_val = builder->create_isub(l_val, r_val);
+                else
+                    tmp_val = builder->create_fsub(l_val, r_val);
+                break;
         }
     }
 }
@@ -458,18 +458,18 @@ void CminusfBuilder::visit(ASTTerm &node) {
         auto r_val = tmp_val;
         bool is_int = promote(builder, &l_val, &r_val);
         switch (node.op) {
-        case OP_MUL:
-            if (is_int)
-                tmp_val = builder->create_imul(l_val, r_val);
-            else
-                tmp_val = builder->create_fmul(l_val, r_val);
-            break;
-        case OP_DIV:
-            if (is_int)
-                tmp_val = builder->create_isdiv(l_val, r_val);
-            else
-                tmp_val = builder->create_fdiv(l_val, r_val);
-            break;
+            case OP_MUL:
+                if (is_int)
+                    tmp_val = builder->create_imul(l_val, r_val);
+                else
+                    tmp_val = builder->create_fmul(l_val, r_val);
+                break;
+            case OP_DIV:
+                if (is_int)
+                    tmp_val = builder->create_isdiv(l_val, r_val);
+                else
+                    tmp_val = builder->create_fdiv(l_val, r_val);
+                break;
         }
     }
 }
