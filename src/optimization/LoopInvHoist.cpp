@@ -109,7 +109,6 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
         rmlist.push_back(zinstr);
         retmovfinal(bb);
     }
-    
 }
 
 void LoopInvHoist::find_right_no_assign(std::unordered_set<BBset_t *>::iterator bbs)
