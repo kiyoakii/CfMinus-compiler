@@ -48,13 +48,11 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
 {
     if (instr->isBinary())
     {
-        BinaryInst* bininstr=nullptr;
-        BinaryInst* newbininstr=nullptr;
         change=true;
-        bininstr=static_cast<BinaryInst*>(instr);
+        BinaryInst* bininstr=static_cast<BinaryInst*>(instr);
+        BinaryInst* newbininstr=nullptr;
         auto op0=bininstr->get_operand(0);
         auto op1=bininstr->get_operand(1);
-        
         if (bininstr->is_add())  
             newbininstr=bininstr->create_add(op0,op1,bb,m_);
         if (bininstr->is_fadd())  
