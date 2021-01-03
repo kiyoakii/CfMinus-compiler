@@ -3,17 +3,12 @@
 #include "LoopSearch.hpp"
 #include "LoopInvHoist.hpp"
 
-bool change;
-
 void LoopInvHoist::retmovfinal(BasicBlock* bb)
 {
-    std::cout<<"move terminal of bb: "<<bb->get_name()<<std::endl;
     Instruction* instr=nullptr;
     for (auto i:bb->get_instructions())
-    {
         if (i->isTerminator())
             instr=i;
-    }
     if (instr==nullptr)
         return;
     if (instr->is_br())
@@ -39,9 +34,7 @@ void LoopInvHoist::retmovfinal(BasicBlock* bb)
         ReturnInst* retinstr=static_cast<ReturnInst*>(instr);
         ReturnInst* newretinstr=nullptr;
         if (retinstr->is_void_ret())
-        {
             newretinstr=retinstr->create_void_ret(bb);
-        }
         else
         {
             auto op0=retinstr->get_operand(0);
@@ -57,7 +50,6 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
     {
         BinaryInst* bininstr=nullptr;
         BinaryInst* newbininstr=nullptr;
-        std::cout<<"move "<<instr->get_name()<<" to "<<bb->get_name()<<std::endl;
         change=true;
         bininstr=static_cast<BinaryInst*>(instr);
         auto op0=bininstr->get_operand(0);
@@ -81,48 +73,33 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
             newbininstr=bininstr->create_fdiv(op0,op1,bb,m_);
         newbininstr->set_name(bininstr->get_name());
         rmlist.push_back(bininstr);
-        std::cout<<"instr push in rmlist"<<std::endl;
         retmovfinal(bb);
     }
 }
 
-void LoopInvHoist::f1(std::unordered_set<BBset_t *>::iterator bbs)
+void LoopInvHoist::find_right_no_assign(std::unordered_set<BBset_t *>::iterator bbs)
 {
     for (auto i:*(*bbs))
-    {
         for (auto iinstr:i->get_instructions())
-        {
             for (auto iop:iinstr->get_operands())
-            {
                 for (auto j:*(*bbs))
-                {
                     for (auto jinstr:j->get_instructions())
-                    {
                         if (iop==jinstr)
-                        {
                             rightnoassign[iinstr]=false;
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
-void LoopInvHoist::f2(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb)
+void LoopInvHoist::move_all_instr(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* base)
 {
     BasicBlock* movedest=nullptr;
-    for (auto i:bb->get_pre_basic_blocks())
+    for (auto i:base->get_pre_basic_blocks())
     {
         bool notinloop=true;
         for (auto j:*(*bbs))
-        {
             if (i==j)
             {
                 notinloop==false;
                 break;
             }
-        }
         if (notinloop)
         {
             movedest=i;
@@ -130,22 +107,11 @@ void LoopInvHoist::f2(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb
         }
     }
     for (auto i:*(*bbs))
-    {
-        std::cout<<"bb: "<<i->get_name()<<std::endl;
         for (auto iinstr:i->get_instructions())
-        {
             if (rightnoassign[iinstr])
-            {
                 moveinstr(iinstr,movedest);
-            }
-        }
-    }
-    std::cout<<"all rmlist found"<<std::endl;
     for (auto i:rmlist)
-    {
         i->get_parent()->delete_instr(i);
-    }
-    std::cout<<"all removed"<<std::endl;
 }
 
 void LoopInvHoist::run()
@@ -153,34 +119,19 @@ void LoopInvHoist::run()
     m_->set_print_name();
     LoopSearch loop_searcher(m_, false);
     loop_searcher.run();
-    for (auto fun:m_->get_functions())
-    {
-        std::cout<<fun->get_name()<<std::endl;
-    }
-    int lv=0;
     for (auto bbs=loop_searcher.begin();bbs!=loop_searcher.end();bbs++)
     {
         change=true;
-        lv++;
-        std::cout<<"loop"<<lv<<std::endl;
         while (change)
         {
             change=false;
-            auto bb=loop_searcher.get_loop_base(*bbs);
+            auto base=loop_searcher.get_loop_base(*bbs);
             for (auto bb:*(*bbs))
-            {
-                bbvisit[bb]=false;
-                for (auto bbb:*(*bbs))
-                    bbformer[bbb][bb]=false;
                 for (auto instr:bb->get_instructions())
-                {
-                    leftnouse[instr]=true;
                     rightnoassign[instr]=true;
-                }
-            }
             rmlist.clear();
-            f1(bbs);
-            f2(bbs,bb);
+            find_right_no_assign(bbs);
+            move_all_instr(bbs,base);
         }
     }
 }
