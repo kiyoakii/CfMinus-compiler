@@ -73,6 +73,43 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
         rmlist.push_back(bininstr);
         retmovfinal(bb);
     }
+    if (instr->is_si2fp())
+    {
+        change=true;
+        SiToFpInst* si2fpinstr=static_cast<SiToFpInst*>(instr);
+        SiToFpInst* newsi2fpinstr=nullptr;
+        auto op0=si2fpinstr->get_operand(0);
+        auto ty=si2fpinstr->get_dest_type();
+        newsi2fpinstr=si2fpinstr->create_sitofp(op0,ty,bb);
+        newsi2fpinstr->set_name(si2fpinstr->get_name());
+        rmlist.push_back(si2fpinstr);
+        retmovfinal(bb);
+    }
+    if (instr->is_fp2si())
+    {
+        change=true;
+        FpToSiInst* fp2siinstr=static_cast<FpToSiInst*>(instr);
+        FpToSiInst* newfp2siinstr=nullptr;
+        auto op0=fp2siinstr->get_operand(0);
+        auto ty=fp2siinstr->get_dest_type();
+        newfp2siinstr=fp2siinstr->create_fptosi(op0,ty,bb);
+        newfp2siinstr->set_name(fp2siinstr->get_name());
+        rmlist.push_back(fp2siinstr);
+        retmovfinal(bb);
+    }
+    if (instr->is_zext())
+    {
+        change=true;
+        ZextInst* zinstr=static_cast<ZextInst*>(instr);
+        ZextInst* newzinstr=nullptr;
+        auto op0=zinstr->get_operand(0);
+        auto ty=zinstr->get_dest_type();
+        newzinstr=zinstr->create_zext(op0,ty,bb);
+        newzinstr->set_name(zinstr->get_name());
+        rmlist.push_back(zinstr);
+        retmovfinal(bb);
+    }
+    
 }
 
 void LoopInvHoist::find_right_no_assign(std::unordered_set<BBset_t *>::iterator bbs)
