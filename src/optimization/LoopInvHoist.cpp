@@ -86,70 +86,10 @@ void LoopInvHoist::moveinstr(Instruction* instr,BasicBlock* bb)
     }
 }
 
-/*void LoopInvHoist::f1(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb,bool print)
-{
-    bbvisit[bb]=true;
-    std::cout<<"bb: "<<bb->get_name()<<std::endl;
-    for (auto nextbb:bb->get_succ_basic_blocks())
-    {
-        bool inloop=false;
-        if (bbformer[nextbb][bb]==true)
-            continue;
-        for (auto i:*(*bbs))
-        {
-            if ((i==nextbb) && (!bbvisit[nextbb]))
-            {
-                inloop=true;
-                break;
-            }
-        }
-        if (inloop)
-        {
-            bbformer[nextbb][bb]=true;
-            for (auto i:*(*bbs))
-            {
-                bbformer[nextbb][i]=bbformer[nextbb][i] && bbformer[bb][i];
-            }
-            f1(bbs,nextbb,false);
-        }
-    }
-}
-
-void LoopInvHoist::f2(std::unordered_set<BBset_t *>::iterator bbs,bool print)
+void LoopInvHoist::f1(std::unordered_set<BBset_t *>::iterator bbs)
 {
     for (auto i:*(*bbs))
     {
-        //std::cout<<"bb: "<<i->get_name()<<std::endl;
-        for (auto iinstr:i->get_instructions())
-        {
-            if (!leftnouse[iinstr])
-                continue;
-            for (auto j:*(*bbs))
-            {
-                if (!bbformer[i][j])
-                    continue;
-                for (auto jinstr:j->get_instructions())
-                {
-                    for (auto jop:jinstr->get_operands())
-                    {
-                        if (iinstr==jop)
-                            leftnouse[iinstr]=false;
-                    }
-                }
-            }
-            //if (leftnouse[iinstr])
-            //    std::cout<<iinstr->get_name()<<" not used"<<std::endl;
-            //else
-            //    std::cout<<iinstr->get_name()<<" used"<<std::endl;
-        }
-    }
-}*/
-
-void LoopInvHoist::f3(std::unordered_set<BBset_t *>::iterator bbs,bool print)
-{
-    for (auto i:*(*bbs))
-    {
-        if (print)  std::cout<<"bb: "<<i->get_name()<<std::endl;
         for (auto iinstr:i->get_instructions())
         {
             for (auto iop:iinstr->get_operands())
@@ -165,15 +105,11 @@ void LoopInvHoist::f3(std::unordered_set<BBset_t *>::iterator bbs,bool print)
                     }
                 }
             }
-            if (rightnoassign[iinstr])
-                if (print)  std::cout<<iinstr->get_name()<<" right not assigned"<<std::endl;
-            else
-                if (print)  std::cout<<iinstr->get_name()<<" right assigned"<<std::endl;
         }
     }
 }
 
-void LoopInvHoist::f4(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb,bool print)
+void LoopInvHoist::f2(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb)
 {
     BasicBlock* movedest=nullptr;
     for (auto i:bb->get_pre_basic_blocks())
@@ -243,13 +179,8 @@ void LoopInvHoist::run()
                 }
             }
             rmlist.clear();
-            //std::cout<<"f1*****"<<std::endl;
-            ///f1(bbs,bb);
-            //std::cout<<"f2*****"<<std::endl;
-            //f2(bbs);
-            f3(bbs,false);
-            std::cout<<"f4*****"<<std::endl;
-            f4(bbs,bb,true);
+            f1(bbs);
+            f2(bbs,bb);
         }
     }
 }

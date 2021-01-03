@@ -11,10 +11,8 @@ class LoopInvHoist : public Pass {
 public:
     LoopInvHoist(Module *m) : Pass(m) {}
     void run();
-    void f1(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb,bool print);
-    void f2(std::unordered_set<BBset_t *>::iterator bbs,bool print);
-    void f3(std::unordered_set<BBset_t *>::iterator bbs,bool print);
-    void f4(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb,bool print);
+    void f1(std::unordered_set<BBset_t *>::iterator bbs);
+    void f2(std::unordered_set<BBset_t *>::iterator bbs,BasicBlock* bb);
     void moveinstr(Instruction* instr,BasicBlock* bb);
     void retmovfinal(BasicBlock* bb);
     std::unordered_map<BasicBlock*,bool> bbvisit;
