@@ -1,0 +1,19 @@
+void main(void){
+    int i;
+    int j;
+    int a;
+    i=0;
+    j=0;
+    a=2;
+    while (i<a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a)
+    {
+        j=j+1;
+        if (j==1000)
+        {
+            i=i+1;
+            j=0;
+        }
+    }
+	output(i);
+    return ;
+}
