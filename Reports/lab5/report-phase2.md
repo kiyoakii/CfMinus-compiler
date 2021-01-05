@@ -12,7 +12,7 @@
 
 能计算出结果的变量，就直接替换为常量，删除该句子，并在过程中将该变量都转换为常量。整型和浮点型都要考虑。删除无用分支并将条件跳转转换为强制性跳转。
 
-2.
+2.循环不变式外提：将CFG中在一个循环中结果不变的表达式提到循环之前，可以外提的包括8种双目运算和3种格式转换。
 
 3.
 
@@ -255,16 +255,117 @@
 
 * 循环不变式外提
     实现思路：
-    相应代码：
-    优化前后的IR对比（举一个例子）并辅以简单说明：
-    
+    第一层循环：自内而外遍历所有循环
+    第二层循环：不断循环直到不能再做出任何改变
+            第一步：查找并标记当前循环内所有右值没有被赋值的表达式（称为“外提表达式”）
+            第二步：查找当前循环的入口节点的循环外前驱（称为“目标基本块”）（入口节点有两个前驱，一个循环内，一个循环外）
+            第三步：将所有“外提表达式”复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
+                    这里不用考虑顺序：
+                            假设语 句b需要语句a的结果，则在外提语句a时，语句b还不属于“外提表达式”
+                            等到外提语句b时，语句a必定已经在“目标基本块”里面了，语句b依旧在语句a之后）
+            第四步：将“目标基本块”里的终结语句复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
+            第五步：删除所有“删除列表”里的语句。
+* 相应代码：
+```
+cminus：
+void main(void)
+{
+    int i;
+    int a;
+    i=0;
+    a=5;
+    while (i<a*a)
+        i=i+1;
+	output(i);
+    return ;
+}
+
+第一、二步：
+define void @main() {
+label_entry:（目标基本块）
+  br label %label2
+label2:                                                ; preds = %label_entry, %label10
+  %op15 = phi i32 [ 0, %label_entry ], [ %op12, %label10 ]
+  %op6 = mul i32 5, 5（外提表达式）
+  %op7 = icmp slt i32 %op15, %op6
+  %op8 = zext i1 %op7 to i32
+  %op9 = icmp ne i32 %op8, 0
+  br i1 %op9, label %label10, label %label13
+label10:                                                ; preds = %label2
+  %op12 = add i32 %op15, 1
+  br label %label2
+label13:                                                ; preds = %label2
+  call void @output(i32 %op15)
+  ret void
+}
+
+第三步：
+define void @main() {
+label_entry:（目标基本块）
+  br label %label2
+  %op6 = mul i32 5, 5（新外提表达式）
+label2:                                                ; preds = %label_entry, %label10
+  %op15 = phi i32 [ 0, %label_entry ], [ %op12, %label10 ]
+  %op6 = mul i32 5, 5（旧外提表达式）
+  %op7 = icmp slt i32 %op15, %op6
+  %op8 = zext i1 %op7 to i32
+  %op9 = icmp ne i32 %op8, 0
+  br i1 %op9, label %label10, label %label13
+label10:                                                ; preds = %label2
+  %op12 = add i32 %op15, 1
+  br label %label2
+label13:                                                ; preds = %label2
+  call void @output(i32 %op15)
+  ret void
+}
+
+第四步：
+define void @main() {
+label_entry:（目标基本块）
+  br label %label2（旧终结表达式）
+  %op6 = mul i32 5, 5（新外提表达式）
+  br label %label2（新终结表达式）
+label2:                                                ; preds = %label_entry, %label10
+  %op15 = phi i32 [ 0, %label_entry ], [ %op12, %label10 ]
+  %op6 = mul i32 5, 5（外提表达式）
+  %op7 = icmp slt i32 %op15, %op6
+  %op8 = zext i1 %op7 to i32
+  %op9 = icmp ne i32 %op8, 0
+  br i1 %op9, label %label10, label %label13
+label10:                                                ; preds = %label2
+  %op12 = add i32 %op15, 1
+  br label %label2
+label13:                                                ; preds = %label2
+  call void @output(i32 %op15)
+  ret void
+}
+
+第五步：
+define void @main() {
+label_entry:（目标基本块）
+  %op6 = mul i32 5, 5（新外提表达式）
+  br label %label2（新终结表达式）
+label2:                                                ; preds = %label_entry, %label10
+  %op15 = phi i32 [ 0, %label_entry ], [ %op12, %label10 ]
+  %op7 = icmp slt i32 %op15, %op6
+  %op8 = zext i1 %op7 to i32
+  %op9 = icmp ne i32 %op8, 0
+  br i1 %op9, label %label10, label %label13
+label10:                                                ; preds = %label2
+  %op12 = add i32 %op15, 1
+  br label %label2
+label13:                                                ; preds = %label2
+  call void @output(i32 %op15)
+  ret void
+}
+```
 * 活跃变量分析
     实现思路：
     相应的代码：
 
 ### 实验总结
 
-此次实验有什么收获
+认识到了静态单赋值格式的好处，并因此删掉了一半的代码。
 
 ### 实验反馈 （可选 不会评分）
 
