@@ -44,7 +44,7 @@ void ActiveVars::run()
             // 对每个 bb，得到 use 和 def
             // 按 DFS 逆序，更新 live_in 和 live_out
             for (auto bb : func_->get_basic_blocks()) {
-                std::set<Value *> bb_def, bb_use;
+                std::unordered_set<Value *> bb_def, bb_use;
                 std::unordered_set<Value *> used, defined;
                 for (auto instr : bb->get_instructions()) {
                     for (auto op : instr->get_operands()) {
@@ -73,12 +73,33 @@ void ActiveVars::run()
             bool fixed = true;
             do {
                 fixed = true;
-                for (auto bb = DFSList.end(); bb != DFSList.begin(); bb--) {
-                    auto in_bb = live_in[*bb];
-                    auto out_bb = live_out[*bb];
-                    for (auto sbb : (*bb)->get_succ_basic_blocks()) {
-                        
+                for (auto _bb = DFSList.end(); _bb != DFSList.begin(); _bb--) {
+                    auto bb = *_bb;
+                    auto in_bb = live_in[bb];
+                    auto new_out_bb = live_out[bb];
+                    auto out_bb = live_out[bb];
+                    for (auto sbb : bb->get_succ_basic_blocks()) {
+                        for (auto e : live_in[sbb]) {
+                            new_out_bb.insert(e);
+                        }
                     }
+                    if (new_out_bb != out_bb) {
+                        out_bb = new_out_bb;
+                        fixed = false;
+                    }
+                    if (!fixed) {
+                        for (auto pbb : bb->get_pre_basic_blocks()) {
+                            live_in[bb] = live_out[bb];
+                            for (auto e : def[bb]) {
+                                if (live_in[bb].find(e) != live_in[bb].end()) {
+                                    live_in[bb].erase(e);
+                                }
+                            }
+                            for (auto e : use[bb]) {
+                                live_in[bb].insert(e);
+                            }
+                        }
+                    } 
                 }
             } while (!fixed);
 

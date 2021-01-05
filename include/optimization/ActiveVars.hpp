@@ -14,6 +14,7 @@
 #include <map>
 #include <queue>
 #include <fstream>
+#include <algorithm>
 
 class ActiveVars : public Pass
 {
@@ -23,9 +24,9 @@ public:
     std::string print();
 private:
     Function *func_;
-    std::map<BasicBlock *, std::set<Value *>> live_in, live_out;
-    std::map<BasicBlock *, std::set<Value *>> def, use;
-    std::map<BasicBlock *, bool> visited;
+    std::map<BasicBlock *, std::unordered_set<Value *>> live_in, live_out;
+    std::map<BasicBlock *, std::unordered_set<Value *>> def, use;
+    std::unordered_map<BasicBlock *, bool> visited;
     std::vector<BasicBlock *> DFSList;
 
     void buildDFSList(Function *func);
