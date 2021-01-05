@@ -1,0 +1,10 @@
+void main(void){
+    int i;
+    int a;
+    i=0;
+    a=5;
+    while (i<a*a)
+        i=i+1;
+	output(i);
+    return ;
+}
