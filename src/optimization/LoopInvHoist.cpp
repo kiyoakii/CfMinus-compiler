@@ -131,7 +131,7 @@ void LoopInvHoist::move_all_instr(std::unordered_set<BBset_t *>::iterator bbs,Ba
         for (auto j:*(*bbs))
             if (i==j)
             {
-                notinloop==false;
+                notinloop=false;
                 break;
             }
         if (notinloop)
