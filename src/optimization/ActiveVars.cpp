@@ -1,5 +1,27 @@
 #include "ActiveVars.hpp"
 
+void ActiveVars::buildDFSList(Function * func) {
+    visited.clear();
+    for (auto bb : func->get_basic_blocks()) {
+        visited[bb] = false;
+    }
+    for (auto bb : func->get_basic_blocks()) {
+        if (!visited[bb]) {
+            DFSvisit(bb);
+        }
+    }
+}
+
+void ActiveVars::DFSvisit(BasicBlock* bb) {
+    DFSList.push_back(bb);
+    visited[bb] = true;
+    for (auto sbb : bb->get_succ_basic_blocks()) {
+        if (!visited[sbb]) {
+            DFSvisit(sbb);
+        }
+    }
+}
+
 void ActiveVars::run()
 {
     std::ofstream output_active_vars;
@@ -17,7 +39,48 @@ void ActiveVars::run()
             live_in.clear();
             live_out.clear();
             
-            // 在此分析 func_ 的每个bb块的活跃变量，并存储在 live_in live_out 结构内
+            // 在此分析 func_ 的每个 bb 块的活跃变量，并存储在 live_in live_out 结构内
+            // 思路：
+            // 对每个 bb，得到 use 和 def
+            // 按 DFS 逆序，更新 live_in 和 live_out
+            for (auto bb : func_->get_basic_blocks()) {
+                std::set<Value *> bb_def, bb_use;
+                std::unordered_set<Value *> used, defined;
+                for (auto instr : bb->get_instructions()) {
+                    for (auto op : instr->get_operands()) {
+                        used.insert(op);
+                        if (defined.find(op) == defined.end()) {
+                            bb_use.insert(op);
+                        }
+                    }
+                    if (!instr->is_void()) {
+                        defined.insert(instr);
+                        if (used.find(instr) == used.end()) {
+                            bb_def.insert(instr);
+                        }
+                    }
+                }
+                def[bb] = bb_def;
+                use[bb] = bb_use;
+            }
+
+            // BasicBlock* EXIT = BasicBlock::create(this->m_, "__EXIT__", func);
+            // def[EXIT] = std::set<Value *>();
+            // use[EXIT] = std::set<Value *>();
+
+            buildDFSList(func_);
+
+            bool fixed = true;
+            do {
+                fixed = true;
+                for (auto bb = DFSList.end(); bb != DFSList.begin(); bb--) {
+                    auto in_bb = live_in[*bb];
+                    auto out_bb = live_out[*bb];
+                    for (auto sbb : (*bb)->get_succ_basic_blocks()) {
+                        
+                    }
+                }
+            } while (!fixed);
 
             output_active_vars << print();
             output_active_vars << ",";

@@ -10,6 +10,7 @@
 #include <vector>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <queue>
 #include <fstream>
@@ -23,6 +24,12 @@ public:
 private:
     Function *func_;
     std::map<BasicBlock *, std::set<Value *>> live_in, live_out;
+    std::map<BasicBlock *, std::set<Value *>> def, use;
+    std::map<BasicBlock *, bool> visited;
+    std::vector<BasicBlock *> DFSList;
+
+    void buildDFSList(Function *func);
+    void DFSvisit(BasicBlock* bb);
 };
 
 #endif
