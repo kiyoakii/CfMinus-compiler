@@ -14,21 +14,25 @@
 
 2. 循环不变式外提
 
-   将CFG中在一个循环中结果不变的表达式提到循环之前，可以外提的包括8种双目运算和3种格式转换。
+   将 CFG 中在一个循环中结果不变的表达式提到循环之前，可以外提的包括 8 种双目运算和 3 种格式转换。
 
 3. 活跃变量分析
 
-   分析各函数内bb块的入口和出口的活跃变量。
+   分析各函数内 bb 块的入口和出口的活跃变量。
 
 ## 实验难点
 
 **常量传播**
 
+难点在于找到没有用到的 bb 块并删除。
+
 **循环不变式外提**
+
+难点在于查找所需要的/遍历所有循环/基本块/语句，此外还需要根据静态单赋值格式的性质排除某些情况、简化代码。
 
 **活跃变量分析**
 
-难点集中在Phi Node的处理，需要更新原版的数据流方程。
+难点集中在 Phi Node 的处理，需要修正原版的数据流方程。
 
 ## 实验设计
 
@@ -38,7 +42,7 @@
 
 **Step1**
 
-先将常量进行折叠，即遇到整形操作符、浮点数操作符时，用`operand()`函数进行取值计算。（get_operand()得到Value* 型的变量，需要转换一下），再用`replace_all_use_with()`将这句话删除，放入等待删除队列中。
+先将常量进行折叠，即遇到整形操作符、浮点数操作符时，用 `operand()` 函数进行取值计算。（get_operand()得到 Value* 型的变量，需要转换一下），再用 `replace_all_use_with()` 将这句话删除，放入等待删除队列中。
 
 ·遇到整型操作符：
 
@@ -94,7 +98,7 @@ if(v1 != nullptr && v2 != nullptr){
 
 **Step2**
 
-遇到需要整型变浮点型、浮点型变整型、bool型变整型的变量，需要类型转换。和第一部分一样，全部替换，然后放入待删除队列。
+遇到需要整型变浮点型、浮点型变整型、bool 型变整型的变量，需要类型转换。和第一部分一样，全部替换，然后放入待删除队列。
 
 ```c++
 ConstantFP *val =cast_constantfp(instr->get_operand(0));
@@ -122,7 +126,7 @@ if(val != nullptr){
 
 **Step3**
 
-if-else跳转问题，找到终结语句，获取`br`，将`br`转换为整型并赋值给`cond`，当cond为常数时，进行判断：`cond`为零时，强制跳转到第二块（falsebb），并将终结语句放入待删除队列；`cond`非零时，强制跳转到第一块（truebb），并将终结语句放入待删除队列。
+if-else 跳转问题，找到终结语句，获取 `br`，将 `br` 转换为整型并赋值给 `cond`，当 cond 为常数时，进行判断：`cond` 为零时，强制跳转到第二块（falsebb），并将终结语句放入待删除队列；`cond` 非零时，强制跳转到第一块（truebb），并将终结语句放入待删除队列。
 
 ```c++
 auto br = bb->get_terminator();
@@ -154,7 +158,7 @@ for ( auto instr : wait_delete)
 }
 ```
 
-优化前后的IR对比（举一个例子）并辅以简单说明：用`testcase-1`举例
+优化前后的 IR 对比（举一个例子）并辅以简单说明：用 `testcase-1` 举例
 
 ```c
 void main(void){
@@ -279,7 +283,7 @@ label74:                                                ; preds = %label2
         第二步：查找当前循环的入口节点的循环外前驱（称为“目标基本块”）（入口节点有两个前驱，一个循环内，一个循环外）
         第三步：将所有“外提表达式”复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
                 这里不用考虑顺序：
-                        假设语 句b需要语句a的结果，则在外提语句a时，语句b还不属于“外提表达式”
+                        假设语句b需要语句a的结果，则在外提语句a时，语句b还不属于“外提表达式”
                         等到外提语句b时，语句a必定已经在“目标基本块”里面了，语句b依旧在语句a之后）
         第四步：将“目标基本块”里的终结语句复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
         第五步：删除所有“删除列表”里的语句。
@@ -393,25 +397,25 @@ IN[BB] = (OUT[BB]-def_{BB})\cup use_{BB}
 \end{gather}
 $$
 
-但是该方程没有考虑Phi Node，现定义与Phi Node相关的两个数据：
+但是该方程没有考虑 Phi Node，现定义与 Phi Node 相关的两个数据：
 
-1. $phi\_var_{BB}$
+1. $phi\_var_{BB} $
 
-   表示BB中，会被后继Basic Block中$\phi$函数需要的变量
+   表示 BB 中，会被后继 Basic Block 中 $\phi $函数需要的变量
 
 2. $phi\_in_{BB} $
 
-   因为BB中$\phi$函数存在而带来的入口活跃变量
+   因为 BB 中 $\phi $ 函数存在而带来的入口活跃变量
 
-也即，将原来的$IN[BB]$拆成了两部分：$IN[BB]$与$phi\_in_{BB}$
+也即，将原来的 $ IN[BB] $ 拆成了两部分：$IN[BB] $ 与  $phi\_in_{BB} $
 
-注意，$phi\_var{BB}$与$phi\_in_{BB}$是和use、def一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对OUT和IN更新，到达不动点后，将IN[BB]与$phi\_in{BB}$合并即可。
+注意，$ phi\_var{BB}$ 与 $phi\_in_{BB} $ 是和 $use、def$ 一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对 OUT 和 IN 更新，到达不动点后，将 $IN[BB]$ 与 $phi\_in{BB} $ 合并即可。
 
 于是数据流方程变为：
 
 迭代更新时：
 $$
-OUT[BB] = (\cup_{sBB\in succ(BB)}IN[BB]) \cup phi\_var_{BB} \\
+OUT[BB] = (\cup_{sBB\in succ(BB)}IN[sBB]) \cup phi\_var_{BB} \\
 IN[BB] = (OUT[BB]-def_{BB})\cup use_{BB}
 $$
 
@@ -449,7 +453,7 @@ void ActiveVars::DFSVisit(BasicBlock* bb) {
 }
 ```
 
-遍历得到 $def$、$use$、$phi\_var$与$phi\_in$
+遍历得到 $def $、$use $、$phi\_var $与 $phi\_in $
 
 ```cpp
 for (auto bb : func_->get_basic_blocks()) {
@@ -498,7 +502,7 @@ for (auto bb : func_->get_basic_blocks()) {
             }
 ```
 
-迭代更新IN和OUT
+迭代更新 IN 和 OUT
 
 ```cpp
 bool fixed;
@@ -531,7 +535,7 @@ bool fixed;
             } while (!fixed);
 ```
 
-合并$IN$和$phi\_in$
+合并 $IN $ 和 $phi\_in $
 
 ```cpp
 for (auto bb : func_->get_basic_blocks()) {
@@ -545,10 +549,7 @@ for (auto bb : func_->get_basic_blocks()) {
 
 认识到了静态单赋值格式的好处，并熟练掌握了三种优化的实现。
 
-### 实验反馈 （可选 不会评分）
+### 实验反馈
 
-对本次实验的建议
+感觉 LightIR 的类型系统有点难以琢磨，也听到了有些身边同学抱怨类型系统不完善，如果助教能单独讲讲设计思路就好了。
 
-### 组间交流 （可选）
-
-本次实验和哪些组（记录组长学号）交流了哪一部分信息
