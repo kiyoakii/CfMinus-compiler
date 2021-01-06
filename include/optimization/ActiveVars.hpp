@@ -25,12 +25,13 @@ public:
 private:
     Function *func_;
     std::map<BasicBlock *, std::unordered_set<Value *>> live_in, live_out;
-    std::map<BasicBlock *, std::unordered_set<Value *>> def, use;
+    std::map<BasicBlock *, std::unordered_set<Value *>> def, use, phi_in, phi_var;
+
     std::unordered_map<BasicBlock *, bool> visited;
     std::vector<BasicBlock *> DFSList;
 
     void buildDFSList(Function *func);
-    void DFSvisit(BasicBlock* bb);
+    void DFSVisit(BasicBlock* bb);
 };
 
 #endif
