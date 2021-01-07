@@ -44,7 +44,7 @@
 
 先将常量进行折叠，即遇到整形操作符、浮点数操作符时，用 `operand()` 函数进行取值计算。（get_operand()得到 Value* 型的变量，需要转换一下），再用 `replace_all_use_with()` 将这句话删除，放入等待删除队列中。
 
-·遇到整型操作符：
+**遇到整型操作符**
 
 ```C++
 auto binary_instr = dynamic_cast<BinaryInst *>(instr);
@@ -57,7 +57,7 @@ auto binary_instr = dynamic_cast<BinaryInst *>(instr);
                     }
 ```
 
-·遇到浮点型操作符
+**遇到浮点型操作符**
 
 ```c++
 auto binary_instr = dynamic_cast<BinaryInst *>(instr);
@@ -70,7 +70,7 @@ auto binary_instr = dynamic_cast<BinaryInst *>(instr);
                     }
 ```
 
-·遇到整型比较操作符
+**遇到整型比较操作符**
 
 ```c++
 auto cmp_instr = dynamic_cast<CmpInst *>(instr);
@@ -83,7 +83,7 @@ if(v1 != nullptr && v2 != nullptr){
 }
 ```
 
-·遇到浮点型比较操作符
+**遇到浮点型比较操作符**
 
 ```c++
 auto cmp_instr = dynamic_cast<FCmpInst *>(instr);
@@ -149,7 +149,7 @@ if(dynamic_cast<BranchInst *>(br)->is_cond_br()){
 
 **Step4**
 
-处理全局变量问题，建一个map，将需要替换掉的全局变量的值存入map中，最后遇到load()再删除替换。
+处理全局变量问题，建一个 map，将需要替换掉的全局变量的值存入 map 中，最后遇到 load()再删除替换。
 
 ```c++
  else if (instr->is_store()){
@@ -161,7 +161,7 @@ if(dynamic_cast<BranchInst *>(br)->is_cond_br()){
        instr->replace_all_use_with(global_value[(load_instr->get_lval())]);
        wait_delete.push_back(instr);
     }
-  } 
+  }
 
 ```
 
@@ -178,7 +178,7 @@ for ( auto instr : wait_delete)
 
 **Step6**
 
-最后处理运行时不经过的bb块，思路是删除除头结点以外的没有前驱块的结点（bb块）
+最后处理运行时不经过的 bb 块，思路是删除除头结点以外的没有前驱块的结点（bb 块）
 
 ```c++
     for (auto func : m_->get_functions()) {
@@ -205,7 +205,7 @@ for ( auto instr : wait_delete)
 
 优化前后的 IR 对比（举一个例子）并辅以简单说明：用 `testcase-1` 举例
 
-```c
+```c++
 void main(void){
     int i;
     int idx;
@@ -225,7 +225,7 @@ void main(void){
 
 优化前：
 
-```bash
+```llvm
 define void @main() {
 label_entry:
   br label %label2
@@ -322,20 +322,25 @@ label74:                                                ; preds = %label2
 ### 循环不变式外提
 
 **实现思路**
-第一层循环：自内而外遍历所有循环
-第二层循环：不断循环直到不能再做出任何改变
-        第一步：查找并标记当前循环内所有右值没有被赋值的表达式（称为“外提表达式”）
-        第二步：查找当前循环的入口节点的循环外前驱（称为“目标基本块”）（入口节点有两个前驱，一个循环内，一个循环外）
-        第三步：将所有“外提表达式”复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
-                这里不用考虑顺序：
-                        假设语句b需要语句a的结果，则在外提语句a时，语句b还不属于“外提表达式”
-                        等到外提语句b时，语句a必定已经在“目标基本块”里面了，语句b依旧在语句a之后）
-        第四步：将“目标基本块”里的终结语句复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
-        第五步：删除所有“删除列表”里的语句。
+
+* 第一层循环：自内而外遍历所有循环
+
+* 第二层循环：不断循环直到不能再做出任何改变 
+
+  * 第一步：查找并标记当前循环内所有右值没有被赋值的表达式（称为“外提表达式”）        
+
+  * 第二步：查找当前循环的入口节点的循环外前驱（称为“目标基本块”）（入口节点有两个前驱，一个循环内，一个循环外）        
+
+  * 第三步：将所有“外提表达式”复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”。
+
+    这里不用考虑顺序：假设语句b需要语句a的结果，则在外提语句a时，语句b还不属于“外提表达式”，等到外提语句b时，语句a必定已经在“目标基本块”里面了，语句b依旧在语句a之后）
+
+  * 第四步：将“目标基本块”里的终结语句复制到“目标基本块”的结尾，并将原表达式添加进“删除列表”
+  * 第五步：删除所有“删除列表”里的语句。
 
 **相应代码**
 
-```
+```llvm
 cminus：
 void main(void)
 {
@@ -431,7 +436,7 @@ label13:                                                ; preds = %label2
 ### 活跃变量分析
 **实现思路**
 
-先遍历每个 BasicBlock，得到对应的 use 和 def，然后按 DFS 逆序，更新 live_in 和 live_out。
+先遍历每个 BasicBlock，得到对应的 $use$ 和 $def$，然后按 DFS 逆序，更新 $live_in$ 和 $live_out$。
 
 材料中给出的数据流方程如下：
 
@@ -454,7 +459,7 @@ $$
 
 也即，将原来的 $ IN[BB] $ 拆成了两部分：$IN[BB] $ 与  $phi\_in_{BB} $
 
-注意，$ phi\_var{BB}$ 与 $phi\_in_{BB} $ 是和 $use、def$ 一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对 OUT 和 IN 更新，到达不动点后，将 $IN[BB]$ 与 $phi\_in{BB} $ 合并即可。
+注意，$ phi\_var{BB} $ 与 $phi\_in_{BB} $ 是和 $use、def $ 一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对 OUT 和 IN 更新，到达不动点后，将 $IN[BB] $ 与 $phi\_in{BB} $ 合并即可。
 
 于是数据流方程变为：
 
@@ -474,7 +479,7 @@ $$
 
 构建 DFS 序列：
 
-```cpp
+```c++
 void ActiveVars::buildDFSList(Function * func) {
     visited.clear();
     for (auto bb : func->get_basic_blocks()) {
@@ -498,9 +503,9 @@ void ActiveVars::DFSVisit(BasicBlock* bb) {
 }
 ```
 
-遍历得到 $def $、$use $、$phi\_var $与 $phi\_in $
+遍历得到 $def $、$use $、$phi\_var $ 与 $phi\_in $
 
-```cpp
+```c++
 for (auto bb : func_->get_basic_blocks()) {
                 auto &bb_def = def[bb];
                 auto &bb_use = use[bb];
@@ -547,9 +552,9 @@ for (auto bb : func_->get_basic_blocks()) {
             }
 ```
 
-迭代更新 IN 和 OUT
+迭代更新 $IN$ 和 $OUT$
 
-```cpp
+```c++
 bool fixed;
             do {
                 fixed = true;
@@ -582,7 +587,7 @@ bool fixed;
 
 合并 $IN $ 和 $phi\_in $
 
-```cpp
+```c++
 for (auto bb : func_->get_basic_blocks()) {
                 for (auto e : phi_in[bb]) {
                     live_in[bb].insert(e);
@@ -596,4 +601,4 @@ for (auto bb : func_->get_basic_blocks()) {
 
 ### 实验反馈
 
-感觉 LightIR 的类型系统有点难以琢磨，也听到了有些身边同学抱怨类型系统不完善，如果助教能单独讲讲设计思路就好了。
+感觉 LightIR 的类型系统有点难以琢磨，也听到了有些身边同学抱怨类型系统不完善，比如框架里某些处理经常需要用 `dynamic_cast` 来判断，是健康的做法吗？如果助教能单独讲讲设计思路、带大家了解框架的设计就更好了。
