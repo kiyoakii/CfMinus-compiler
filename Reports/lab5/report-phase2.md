@@ -149,6 +149,24 @@ if(dynamic_cast<BranchInst *>(br)->is_cond_br()){
 
 **Step4**
 
+处理全局变量问题，建一个map，将需要替换掉的全局变量的值存入map中，最后遇到load()再删除替换。
+
+```c++
+ else if (instr->is_store()){
+   auto store_instr = dynamic_cast<StoreInst *>(instr);
+   global_value[store_instr->get_lval()] = store_instr->get_rval();
+ }else if (instr->is_load()){
+   auto load_instr = dynamic_cast<LoadInst*>(instr);
+   if(global_value.count(load_instr->get_lval())){
+       instr->replace_all_use_with(global_value[(load_instr->get_lval())]);
+       wait_delete.push_back(instr);
+    }
+  } 
+
+```
+
+**Step5**
+
 最后将队列里的东西全部删除
 
 ```c++
@@ -156,6 +174,33 @@ for ( auto instr : wait_delete)
 {
     bb->delete_instr(instr);
 }
+```
+
+**Step6**
+
+最后处理运行时不经过的bb块，思路是删除除头结点以外的没有前驱块的结点（bb块）
+
+```c++
+    for (auto func : m_->get_functions()) {
+        while (true) {
+            bool changed = false;
+            std::vector<BasicBlock *> wait_delete;
+            for (auto bb : func->get_basic_blocks()) {
+                if (bb->get_name() == "label_entry")continue;//防止头结点被删除
+                if (bb->get_pre_basic_blocks().empty()) {//判断是否有前驱
+                    wait_delete.push_back(bb);
+                    changed = true;
+                }
+            }
+            for( auto bb:wait_delete )
+            {
+                bb->erase_from_parent();
+            }
+            if (!changed)break;
+        }
+
+    }
+
 ```
 
 优化前后的 IR 对比（举一个例子）并辅以简单说明：用 `testcase-1` 举例
@@ -409,7 +454,7 @@ $$
 
 也即，将原来的 $ IN[BB] $ 拆成了两部分：$IN[BB] $ 与  $phi\_in_{BB} $
 
-注意，$ phi\_var{BB}$ 与 $phi\_in_{BB} $ 是和 $use、def$ 一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对 OUT 和 IN 更新，到达不动点后，将 $IN[BB]$ 与 $phi\_in{BB} $ 合并即可。
+注意，$ phi\_var{BB}$ 与 $phi\_in_{BB} $ 是和 $use、def$ 一样，在最初的遍历后即能确定的，无需迭代更新。算法仍然只对 OUT 和 IN 更新，到达不动点后，将 $IN[BB]$ 与 $phi\_in{BB} $ 合并即可。
 
 于是数据流方程变为：
 
@@ -552,4 +597,3 @@ for (auto bb : func_->get_basic_blocks()) {
 ### 实验反馈
 
 感觉 LightIR 的类型系统有点难以琢磨，也听到了有些身边同学抱怨类型系统不完善，如果助教能单独讲讲设计思路就好了。
-
