@@ -392,7 +392,7 @@ label13:                                                ; preds = %label2
 
 $$
 \begin{gather}
-OUT[BB] = \cup_{sBB\in succ(BB)}IN[BB] \\
+OUT[BB] = \cup_{sBB\in succ(BB)}IN[sBB] \\
 IN[BB] = (OUT[BB]-def_{BB})\cup use_{BB}
 \end{gather}
 $$
